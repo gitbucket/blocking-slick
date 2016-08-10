@@ -60,7 +60,11 @@ db.withSession { implicit session =>
   // Drop tables
   models.Tables.schema.remove
 }
+```
 
+Transaction is available by using `withTransaction` instead of `withSession`:
+
+```scala
 // Transaction
 db.withTransaction { implicit session =>
   ...
