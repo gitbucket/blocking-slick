@@ -19,8 +19,6 @@ class SlickBlockingAPISpec extends FunSuite {
 
       Users.unsafeInsert(UsersRow(1, "takezoe", None))
 
-      Users += (UsersRow(1, "takezoe", None))
-
       val result = Users.list
       assert(result.length == 1)
       assert(result.head == UsersRow(1, "takezoe", None))
