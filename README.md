@@ -12,8 +12,8 @@ Add following dependency to your `build.sbt`:
 libraryDependencies += "com.github.takezoe" %% "blocking-slick" % "0.0.1"
 ```
 
-Define an object like follows:
-                                      
+Define an object that mixed in `SlickBlockingAPI` and driver according to your database:
+
 ```scala
 package myapp.slick.driver
 
@@ -30,7 +30,7 @@ import myapp.slick.driver.BlockingH2Driver._
 import myapp.slick.driver.BlockingH2Driver.api._
 ```
 
-See the example of use of blocking API:
+See the example of use of blocking API provided by blocking-slick:
 
 ```scala
 val db = Database.forURL("jdbc:h2:mem:test")
