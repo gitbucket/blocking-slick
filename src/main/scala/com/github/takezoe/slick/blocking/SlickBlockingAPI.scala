@@ -107,27 +107,27 @@ trait SlickBlockingAPI extends JdbcProfile {
       }
     }
 
-    def returningId[RU](returning: Query[_, RU, C]): ReturningInsertInvoker[RU] = {
-      new ReturningInsertInvoker[RU](returning.toNode)
-    }
-
-    class ReturningInsertInvoker[RU](keys: Node) {
-
-      protected val compiled = compileInsert(q.toNode)
-      protected val (_, keyConverter, _) = compiled.buildReturnColumns(keys)
-      protected val converter = keyConverter.asInstanceOf[ResultConverter[JdbcResultConverterDomain, RU]]
-
-      def unsafeInsert(value: U)(implicit session: JdbcBackend#Session): RU = {
-        val compiled = compileInsert(q.toNode)
-        val a = compiled.standardInsert
-        session.withPreparedStatement(a.sql) { st =>
-          st.clearParameters()
-          a.converter.set(value, st)
-          st.executeUpdate()
-          ResultSetInvoker[RU](_ => st.getGeneratedKeys)(pr => converter.read(pr.rs)).first
-        }
-      }
-    }
+//    def returningId[RU](returning: Query[_, RU, C]): ReturningInsertInvoker[RU] = {
+//      new ReturningInsertInvoker[RU](returning.toNode)
+//    }
+//
+//    class ReturningInsertInvoker[RU](keys: Node) {
+//
+//      protected val compiled = compileInsert(q.toNode)
+//      protected val (_, keyConverter, _) = compiled.buildReturnColumns(keys)
+//      protected val converter = keyConverter.asInstanceOf[ResultConverter[JdbcResultConverterDomain, RU]]
+//
+//      def unsafeInsert(value: U)(implicit session: JdbcBackend#Session): RU = {
+//        val compiled = compileInsert(q.toNode)
+//        val a = compiled.standardInsert
+//        session.withPreparedStatement(a.sql) { st =>
+//          st.clearParameters()
+//          a.converter.set(value, st)
+//          st.executeUpdate()
+//          ResultSetInvoker[RU](_ => st.getGeneratedKeys)(pr => converter.read(pr.rs)).first
+//        }
+//      }
+//    }
 
     def unsafeInsert(value: U)(implicit session: JdbcBackend#Session): Int = {
       val compiled = compileInsert(q.toNode)
@@ -141,6 +141,14 @@ trait SlickBlockingAPI extends JdbcProfile {
 
     def insertAll(values: U*)(implicit session: JdbcBackend#Session): Int = {
       values.map { value => unsafeInsert(value) }.sum
+    }
+  }
+
+
+  implicit class ReturningInsertActionComposer2[T, R](a: ReturningInsertActionComposer[T, R]){
+    def unsafeInsert(value: T)(implicit session: JdbcBackend#Session): R = {
+      val f = session.database.run(a += value)
+      Await.result(f, Duration.Inf)
     }
   }
 
