@@ -1,7 +1,7 @@
 package com.github.takezoe.slick.blocking
 
 import slick.ast.{CompiledStatement, Node, ResultSetMapping}
-import slick.dbio.{DBIOAction, Effect, NoStream}
+import slick.dbio.Effect
 import slick.driver.{JdbcDriver, JdbcProfile}
 import slick.jdbc.{JdbcBackend, JdbcResultConverterDomain, ResultSetInvoker}
 import slick.lifted.Query
@@ -137,6 +137,10 @@ trait SlickBlockingAPI extends JdbcProfile {
         a.converter.set(value, st)
         st.executeUpdate()
       }
+    }
+
+    def insertAll(values: U*)(implicit session: JdbcBackend#Session): Int = {
+      values.map { value => unsafeInsert(value) }.sum
     }
   }
 
