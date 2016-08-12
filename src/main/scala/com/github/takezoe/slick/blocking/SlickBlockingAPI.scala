@@ -1,12 +1,16 @@
 package com.github.takezoe.slick.blocking
 
 import slick.ast.{CompiledStatement, Node, ResultSetMapping}
+import slick.dbio.{DBIOAction, Effect, NoStream}
 import slick.driver.{JdbcDriver, JdbcProfile}
 import slick.jdbc.{JdbcBackend, JdbcResultConverterDomain, ResultSetInvoker}
 import slick.lifted.Query
+import slick.profile.SqlStreamingAction
 import slick.relational.{CompiledMapping, ResultConverter}
 import slick.util.SQLBuilder
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
 import scala.language.existentials
 import scala.language.higherKinds
 import scala.language.reflectiveCalls
@@ -166,6 +170,25 @@ trait SlickBlockingAPI extends JdbcProfile {
       }
     }
 
+  }
+
+
+  implicit class SqlStreamingActionInvoker[R](a: SqlStreamingAction[Vector[R], R, Effect]){
+
+    def first(implicit session: JdbcBackend#Session): R = {
+      val f = session.database.run(a.head)
+      Await.result(f, Duration.Inf)
+    }
+
+    def firstOption(implicit session: JdbcBackend#Session): Option[R] = {
+      val f = session.database.run(a.headOption)
+      Await.result(f, Duration.Inf)
+    }
+
+    def list(implicit session: JdbcBackend#Session): List[R] = {
+      val f = session.database.run(a)
+      Await.result(f, Duration.Inf).toList
+    }
   }
 
 }
