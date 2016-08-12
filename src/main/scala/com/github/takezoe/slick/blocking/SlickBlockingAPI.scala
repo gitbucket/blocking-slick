@@ -1,6 +1,6 @@
 package com.github.takezoe.slick.blocking
 
-import slick.ast.{CompiledStatement, ResultSetMapping}
+import slick.ast.{CompiledStatement, Node, ResultSetMapping}
 import slick.driver.JdbcProfile
 import slick.jdbc.{JdbcBackend, JdbcResultConverterDomain}
 import slick.lifted.Query
@@ -13,6 +13,9 @@ import scala.language.reflectiveCalls
 
 trait SlickBlockingAPI { self: JdbcProfile =>
 
+  /**
+   * Extends DDL to add methods to create and drop tables immediately.
+   */
   implicit class DDLInvoker(schema: {
     def createStatements: Iterator[String]
     def dropStatements: Iterator[String]
@@ -40,20 +43,41 @@ trait SlickBlockingAPI { self: JdbcProfile =>
     }
   }
 
+  /**
+   * Extends QueryInvokerImpl to add selectStatement method.
+   */
+  class QueryInvokerImpl2[R](tree: Node) extends QueryInvokerImpl[R](tree, null, null) {
+    def selectStatement: String = getStatement
+  }
+
+  /**
+   * Extends Query to add methods for CRUD operation.
+   */
   implicit class BlockingQueryInvoker[U, C[_]](q: Query[_ ,U, C]){
 
+    def selectStatement: String = {
+      val invoker = new QueryInvokerImpl2[U](queryCompiler.run(q.toNode).tree)
+      invoker.selectStatement
+    }
+
+    def deleteStatement: String = {
+      val tree = deleteCompiler.run(q.toNode).tree
+      val ResultSetMapping(_, CompiledStatement(_, sres: SQLBuilder.Result, _), _) = tree
+      sres.sql
+    }
+
     def list(implicit session: JdbcBackend#Session): Seq[U] = {
-      val invoker = createQueryInvoker[U](queryCompiler.run(q.toNode).tree, null, null)
+      val invoker = new QueryInvokerImpl2[U](queryCompiler.run(q.toNode).tree)
       invoker.results(0).right.get.toSeq
     }
 
     def first(implicit session: JdbcBackend#Session): U = {
-      val invoker = createQueryInvoker[U](queryCompiler.run(q.toNode).tree, null, null)
+      val invoker = new QueryInvokerImpl2[U](queryCompiler.run(q.toNode).tree)
       invoker.first
     }
 
     def firstOption(implicit session: JdbcBackend#Session): Option[U] = {
-      val invoker = createQueryInvoker[U](queryCompiler.run(q.toNode).tree, null, null)
+      val invoker = new QueryInvokerImpl2[U](queryCompiler.run(q.toNode).tree)
       invoker.firstOption
     }
 
@@ -89,6 +113,9 @@ trait SlickBlockingAPI { self: JdbcProfile =>
     }
   }
 
+  /**
+   * Extends Database to add methods for session management.
+   */
   implicit class BlockingDatabase(db: JdbcBackend#DatabaseDef) {
 
     def withSession[T](f: (JdbcBackend#Session) => T): T = {
