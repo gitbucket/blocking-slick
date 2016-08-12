@@ -1,8 +1,8 @@
 package com.github.takezoe.slick.blocking
 
 import slick.ast.{CompiledStatement, Node, ResultSetMapping}
-import slick.driver.JdbcProfile
-import slick.jdbc.{JdbcBackend, JdbcResultConverterDomain}
+import slick.driver.{JdbcDriver, JdbcProfile}
+import slick.jdbc.{JdbcBackend, JdbcResultConverterDomain, ResultSetInvoker}
 import slick.lifted.Query
 import slick.relational.{CompiledMapping, ResultConverter}
 import slick.util.SQLBuilder
@@ -11,7 +11,8 @@ import scala.language.existentials
 import scala.language.higherKinds
 import scala.language.reflectiveCalls
 
-trait SlickBlockingAPI { self: JdbcProfile =>
+trait SlickBlockingAPI extends JdbcProfile {
+  self: JdbcDriver =>
 
   /**
    * Extends DDL to add methods to create and drop tables immediately.
@@ -66,9 +67,9 @@ trait SlickBlockingAPI { self: JdbcProfile =>
       sres.sql
     }
 
-    def list(implicit session: JdbcBackend#Session): Seq[U] = {
+    def list(implicit session: JdbcBackend#Session): List[U] = {
       val invoker = new QueryInvokerImpl2[U](queryCompiler.run(q.toNode).tree)
-      invoker.results(0).right.get.toSeq
+      invoker.results(0).right.get.toList
     }
 
     def first(implicit session: JdbcBackend#Session): U = {
@@ -90,19 +91,41 @@ trait SlickBlockingAPI { self: JdbcProfile =>
       }
     }
 
-    def unsafeUpdate[T](value: T)(implicit session: JdbcBackend#Session): Int = {
+    def unsafeUpdate(value: U)(implicit session: JdbcBackend#Session): Int = {
       val tree = updateCompiler.run(q.toNode).tree
       val ResultSetMapping(_, CompiledStatement(_, sres: SQLBuilder.Result, _), CompiledMapping(_converter, _)) = tree
-      val converter = _converter.asInstanceOf[ResultConverter[JdbcResultConverterDomain, T]]
+      val converter = _converter.asInstanceOf[ResultConverter[JdbcResultConverterDomain, U]]
       session.withPreparedInsertStatement(sres.sql) { st =>
         st.clearParameters
         converter.set(value, st)
-        sres.setter(st, converter.width+1, null)
+        sres.setter(st, converter.width + 1, null)
         st.executeUpdate
       }
     }
 
-    def unsafeInsert[U](value: U)(implicit session: JdbcBackend#Session): Int = {
+    def returningId[RU](returning: Query[_, RU, C]): ReturningInsertInvoker[RU] = {
+      new ReturningInsertInvoker[RU](returning.toNode)
+    }
+
+    class ReturningInsertInvoker[RU](keys: Node) {
+
+      protected val compiled = compileInsert(q.toNode)
+      protected val (_, keyConverter, _) = compiled.buildReturnColumns(keys)
+      protected val converter = keyConverter.asInstanceOf[ResultConverter[JdbcResultConverterDomain, RU]]
+
+      def unsafeInsert(value: U)(implicit session: JdbcBackend#Session): RU = {
+        val compiled = compileInsert(q.toNode)
+        val a = compiled.standardInsert
+        session.withPreparedStatement(a.sql) { st =>
+          st.clearParameters()
+          a.converter.set(value, st)
+          st.executeUpdate()
+          ResultSetInvoker[RU](_ => st.getGeneratedKeys)(pr => converter.read(pr.rs)).first
+        }
+      }
+    }
+
+    def unsafeInsert(value: U)(implicit session: JdbcBackend#Session): Int = {
       val compiled = compileInsert(q.toNode)
       val a = compiled.standardInsert
       session.withPreparedStatement(a.sql) { st =>
