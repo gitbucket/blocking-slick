@@ -1,9 +1,6 @@
 package com.github.takezoe.slick.blocking
 
 import org.scalatest.FunSuite
-import slick.driver.H2Driver
-
-object BlockingH2Driver extends H2Driver with SlickBlockingAPI
 
 class SlickBlockingAPISpec extends FunSuite {
 
