@@ -9,25 +9,14 @@ Usage
 Add following dependency to your `build.sbt`:
 
 ```scala
-libraryDependencies += "com.github.takezoe" %% "blocking-slick" % "0.0.1"
+libraryDependencies += "com.github.takezoe" %% "blocking-slick" % "0.0.2-SNAPSHOT"
 ```
 
-Define an object that mixed in `SlickBlockingAPI` and driver according to your database:
-
-```scala
-package myapp.slick.driver
-
-import slick.driver.H2Driver
-import com.github.takezoe.slick.blocking.SlickBlockingAPI
-
-object BlockingH2Driver extends H2Driver with SlickBlockingAPI
-```
-
-Then, you can enable blocking API by import this object as follows:
+You can enable blocking API by import the blocking driver as follows:
 
 ```scala
 import myapp.slick.driver.BlockingH2Driver._
-import myapp.slick.driver.BlockingH2Driver.api._
+import myapp.slick.driver.BlockingH2Driver.blockingApi._
 ```
 
 See the example of use of blocking API provided by blocking-slick:
@@ -40,7 +29,7 @@ db.withSession { implicit session =>
   models.Tables.schema.create
 
   // Insert
-  Users.unsafeInsert(UsersRow(1, "takezoe"))
+  Users.insert(UsersRow(1, "takezoe"))
 
   // Select
   val users: Seq[UserRow] = Users.list
@@ -52,10 +41,10 @@ db.withSession { implicit session =>
   val user: Option[UserRow] = Users.filter(_.id === "takezoe".bind).firstOption
 
   // Update
-  Users.filter(t => t.id === 1.bind).unsafeUpdate(UsersRow(1, "naoki"))
+  Users.filter(t => t.id === 1.bind).update(UsersRow(1, "naoki"))
   
   // Delete
-  Users.filter(t => t.id === 1.bind).unsafeDelete
+  Users.filter(t => t.id === 1.bind).delete
   
   // Drop tables
   models.Tables.schema.remove
