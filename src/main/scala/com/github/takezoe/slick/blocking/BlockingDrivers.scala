@@ -2,9 +2,9 @@ package com.github.takezoe.slick.blocking
 
 import slick.driver._
 
-object BlockingDerbyDriver extends DerbyDriver with SlickBlockingAPI
-object BlockingH2Driver extends H2Driver with SlickBlockingAPI
-object BlockingHsqldbDriver extends HsqldbDriver with SlickBlockingAPI
-object BlockingMySQLDriver extends MySQLDriver with SlickBlockingAPI
-object BlockingPostgresDriver extends PostgresDriver with SlickBlockingAPI
-object BlockingSQLiteDriver extends SQLiteDriver with SlickBlockingAPI
+object BlockingDerbyDriver extends DerbyDriver with BlockingJdbcProfile
+object BlockingH2Driver extends H2Driver with BlockingJdbcProfile
+object BlockingHsqldbDriver extends HsqldbDriver with BlockingJdbcProfile
+object BlockingMySQLDriver extends MySQLDriver with BlockingJdbcProfile
+object BlockingPostgresDriver extends PostgresDriver with BlockingJdbcProfile
+object BlockingSQLiteDriver extends SQLiteDriver with BlockingJdbcProfile

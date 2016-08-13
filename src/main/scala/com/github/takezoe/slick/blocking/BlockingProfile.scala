@@ -3,9 +3,9 @@ package com.github.takezoe.slick.blocking
 import slick.ast.{CompiledStatement, Node, ResultSetMapping}
 import slick.dbio.Effect
 import slick.driver.{JdbcDriver, JdbcProfile}
-import slick.jdbc.{JdbcBackend, JdbcResultConverterDomain, ResultSetInvoker}
+import slick.jdbc.{ActionBasedSQLInterpolation, JdbcBackend, JdbcResultConverterDomain, ResultSetInvoker}
 import slick.lifted.Query
-import slick.profile.SqlStreamingAction
+import slick.profile._
 import slick.relational.{CompiledMapping, ResultConverter}
 import slick.util.SQLBuilder
 
@@ -14,9 +14,18 @@ import scala.concurrent.duration.Duration
 import scala.language.existentials
 import scala.language.higherKinds
 import scala.language.reflectiveCalls
+import scala.language.implicitConversions
 
-trait SlickBlockingAPI extends JdbcProfile {
+trait BlockingRelationalProfile extends RelationalProfile {
+  self: RelationalDriver =>
+  trait BlockingAPI extends API {}
+}
+
+trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
   self: JdbcDriver =>
+
+  val blockingApi = new BlockingAPI with ImplicitColumnTypes {}
+  implicit def actionBasedSQLInterpolation(s: StringContext) = new ActionBasedSQLInterpolation(s)
 
   /**
    * Extends DDL to add methods to create and drop tables immediately.
@@ -86,7 +95,7 @@ trait SlickBlockingAPI extends JdbcProfile {
       invoker.firstOption
     }
 
-    def unsafeDelete(implicit session: JdbcBackend#Session): Int = {
+    def delete(implicit session: JdbcBackend#Session): Int = {
       val tree = deleteCompiler.run(q.toNode).tree
       val ResultSetMapping(_, CompiledStatement(_, sres: SQLBuilder.Result, _), _) = tree
       session.withPreparedStatement(sres.sql){ st =>
@@ -95,7 +104,7 @@ trait SlickBlockingAPI extends JdbcProfile {
       }
     }
 
-    def unsafeUpdate(value: U)(implicit session: JdbcBackend#Session): Int = {
+    def update(value: U)(implicit session: JdbcBackend#Session): Int = {
       val tree = updateCompiler.run(q.toNode).tree
       val ResultSetMapping(_, CompiledStatement(_, sres: SQLBuilder.Result, _), CompiledMapping(_converter, _)) = tree
       val converter = _converter.asInstanceOf[ResultConverter[JdbcResultConverterDomain, U]]
@@ -107,29 +116,9 @@ trait SlickBlockingAPI extends JdbcProfile {
       }
     }
 
-//    def returningId[RU](returning: Query[_, RU, C]): ReturningInsertInvoker[RU] = {
-//      new ReturningInsertInvoker[RU](returning.toNode)
-//    }
-//
-//    class ReturningInsertInvoker[RU](keys: Node) {
-//
-//      protected val compiled = compileInsert(q.toNode)
-//      protected val (_, keyConverter, _) = compiled.buildReturnColumns(keys)
-//      protected val converter = keyConverter.asInstanceOf[ResultConverter[JdbcResultConverterDomain, RU]]
-//
-//      def unsafeInsert(value: U)(implicit session: JdbcBackend#Session): RU = {
-//        val compiled = compileInsert(q.toNode)
-//        val a = compiled.standardInsert
-//        session.withPreparedStatement(a.sql) { st =>
-//          st.clearParameters()
-//          a.converter.set(value, st)
-//          st.executeUpdate()
-//          ResultSetInvoker[RU](_ => st.getGeneratedKeys)(pr => converter.read(pr.rs)).first
-//        }
-//      }
-//    }
+    def +=(value: U)(implicit session: JdbcBackend#Session): Int = insert(value)
 
-    def unsafeInsert(value: U)(implicit session: JdbcBackend#Session): Int = {
+    def insert(value: U)(implicit session: JdbcBackend#Session): Int = {
       val compiled = compileInsert(q.toNode)
       val a = compiled.standardInsert
       session.withPreparedStatement(a.sql) { st =>
@@ -139,17 +128,24 @@ trait SlickBlockingAPI extends JdbcProfile {
       }
     }
 
+    def ++=(values: U*)(implicit session: JdbcBackend#Session): Int = insertAll(values: _*)
+
+    // TODO should be batch insert
     def insertAll(values: U*)(implicit session: JdbcBackend#Session): Int = {
-      values.map { value => unsafeInsert(value) }.sum
+      values.map { value => insert(value) }.sum
     }
   }
 
-
+  // TODO should not be use DBIO and Future
   implicit class ReturningInsertActionComposer2[T, R](a: ReturningInsertActionComposer[T, R]){
-    def unsafeInsert(value: T)(implicit session: JdbcBackend#Session): R = {
+
+    def +=(value: T)(implicit session: JdbcBackend#Session): R = insert(value)
+
+    def insert(value: T)(implicit session: JdbcBackend#Session): R = {
       val f = session.database.run(a += value)
       Await.result(f, Duration.Inf)
     }
+
   }
 
   /**
@@ -184,7 +180,7 @@ trait SlickBlockingAPI extends JdbcProfile {
 
   }
 
-
+  // TODO should not be use DBIO and Future
   implicit class SqlStreamingActionInvoker[R](a: SqlStreamingAction[Vector[R], R, Effect]){
 
     def first(implicit session: JdbcBackend#Session): R = {

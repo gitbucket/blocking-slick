@@ -5,7 +5,7 @@ import org.scalatest.FunSuite
 class SlickBlockingAPISpec extends FunSuite {
 
   import BlockingH2Driver._
-  import BlockingH2Driver.api._
+  import BlockingH2Driver.blockingApi._
   import models.Tables._
 
   test("DDL, Count and CRUD operation"){
@@ -15,9 +15,9 @@ class SlickBlockingAPISpec extends FunSuite {
       models.Tables.schema.create
 
       // Insert
-      Users.unsafeInsert(UsersRow(1, "takezoe", None))
-      Users.unsafeInsert(UsersRow(2, "chibochibo", None))
-      Users.unsafeInsert(UsersRow(3, "tanacasino", None))
+      Users.insert(UsersRow(1, "takezoe", None))
+      Users.insert(UsersRow(2, "chibochibo", None))
+      Users.insert(UsersRow(3, "tanacasino", None))
 
       val count1 = Query(Users.length).first
       assert(count1 == 3)
@@ -29,19 +29,23 @@ class SlickBlockingAPISpec extends FunSuite {
       assert(result1(2) == UsersRow(3, "tanacasino", None))
 
       // Update
-      Users.filter(_.id === 1L.bind).map(_.name).unsafeUpdate("naoki")
+      Users.filter(_.id === 1L.bind).map(_.name).update("naoki")
 
       val result2 = Users.filter(_.id === 1L.bind).first
       assert(result2 == UsersRow(1, "naoki", None))
 
       // Delete
-      Users.filter(_.id === 1L.bind).unsafeDelete
+      Users.filter(_.id === 1L.bind).delete
 
       val result3 = Users.filter(_.id === 1L.bind).firstOption
       assert(result3.isEmpty)
 
       val count2 = Query(Users.length).first
       assert(count2 == 2)
+
+      val query = sql"SELECT COUNT(*) FROM USERS".as[Int]
+      val count3 = query.first
+      assert(count3 == 2)
     }
   }
 
