@@ -43,9 +43,15 @@ class SlickBlockingAPISpec extends FunSuite {
       val count2 = Query(Users.length).first
       assert(count2 == 2)
 
+      // plain sql
+      val id = 1
+      val name = "takezoe"
+      val insert = sqlu"INSERT INTO USERS (ID, NAME) VALUES (${id}, ${name})"
+      insert.execute
+
       val query = sql"SELECT COUNT(*) FROM USERS".as[Int]
       val count3 = query.first
-      assert(count3 == 2)
+      assert(count3 == 3)
     }
   }
 

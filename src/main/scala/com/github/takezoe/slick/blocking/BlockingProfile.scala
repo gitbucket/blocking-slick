@@ -1,7 +1,7 @@
 package com.github.takezoe.slick.blocking
 
 import slick.ast.{CompiledStatement, Node, ResultSetMapping}
-import slick.dbio.Effect
+import slick.dbio.{Effect, NoStream}
 import slick.driver.{JdbcDriver, JdbcProfile}
 import slick.jdbc.{ActionBasedSQLInterpolation, JdbcBackend, JdbcResultConverterDomain, ResultSetInvoker}
 import slick.lifted.{Query, Rep}
@@ -205,6 +205,14 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
     def list(implicit session: JdbcBackend#Session): List[R] = {
       val f = session.database.run(a)
       Await.result(f, Duration.Inf).toList
+    }
+  }
+
+  // TODO should not be use DBIO and Future
+  implicit class SqlActionInvoker[R](a: SqlAction[R, NoStream, Effect]){
+    def execute(implicit session: JdbcBackend#Session): R = {
+      val f = session.database.run(a)
+      Await.result(f, Duration.Inf)
     }
   }
 
