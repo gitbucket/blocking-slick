@@ -4,7 +4,7 @@ import slick.ast.{CompiledStatement, Node, ResultSetMapping}
 import slick.dbio.Effect
 import slick.driver.{JdbcDriver, JdbcProfile}
 import slick.jdbc.{ActionBasedSQLInterpolation, JdbcBackend, JdbcResultConverterDomain, ResultSetInvoker}
-import slick.lifted.Query
+import slick.lifted.{Query, Rep}
 import slick.profile._
 import slick.relational.{CompiledMapping, ResultConverter}
 import slick.util.SQLBuilder
@@ -26,6 +26,7 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
 
   val blockingApi = new BlockingAPI with ImplicitColumnTypes {}
   implicit def actionBasedSQLInterpolation(s: StringContext) = new ActionBasedSQLInterpolation(s)
+  implicit def repToQueryExecutor[U](rep: Rep[U]): RepQueryExecutor[U] = new RepQueryExecutor(rep)
 
   /**
    * Extends DDL to add methods to create and drop tables immediately.
@@ -57,10 +58,18 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
     }
   }
 
+  class RepQueryExecutor[U](rep: Rep[U]){
+    private val tree = queryCompiler.run(rep.toNode).tree
+    private val invoker = new QueryInvoker[U](tree)
+
+    def run(implicit session: JdbcBackend#Session): U = invoker.first
+    def selectStatement: String = invoker.selectStatement
+  }
+
   /**
    * Extends QueryInvokerImpl to add selectStatement method.
    */
-  class QueryInvokerImpl2[R](tree: Node) extends QueryInvokerImpl[R](tree, null, null) {
+  class QueryInvoker[R](tree: Node) extends QueryInvokerImpl[R](tree, null, null) {
     def selectStatement: String = getStatement
   }
 
@@ -70,7 +79,7 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
   implicit class BlockingQueryInvoker[U, C[_]](q: Query[_ ,U, C]){
 
     def selectStatement: String = {
-      val invoker = new QueryInvokerImpl2[U](queryCompiler.run(q.toNode).tree)
+      val invoker = new QueryInvoker[U](queryCompiler.run(q.toNode).tree)
       invoker.selectStatement
     }
 
@@ -81,17 +90,17 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
     }
 
     def list(implicit session: JdbcBackend#Session): List[U] = {
-      val invoker = new QueryInvokerImpl2[U](queryCompiler.run(q.toNode).tree)
+      val invoker = new QueryInvoker[U](queryCompiler.run(q.toNode).tree)
       invoker.results(0).right.get.toList
     }
 
     def first(implicit session: JdbcBackend#Session): U = {
-      val invoker = new QueryInvokerImpl2[U](queryCompiler.run(q.toNode).tree)
+      val invoker = new QueryInvoker[U](queryCompiler.run(q.toNode).tree)
       invoker.first
     }
 
     def firstOption(implicit session: JdbcBackend#Session): Option[U] = {
-      val invoker = new QueryInvokerImpl2[U](queryCompiler.run(q.toNode).tree)
+      val invoker = new QueryInvoker[U](queryCompiler.run(q.toNode).tree)
       invoker.firstOption
     }
 
