@@ -8,9 +8,9 @@ class SlickBlockingAPISpec extends FunSuite {
   import BlockingH2Driver.blockingApi._
   import models.Tables._
 
-  test("DDL, Count and CRUD operation"){
-    val db = Database.forURL("jdbc:h2:mem:test")
+  private val db = Database.forURL("jdbc:h2:mem:test")
 
+  test("CRUD operation"){
     db.withSession { implicit session =>
       models.Tables.schema.create
 
@@ -43,15 +43,49 @@ class SlickBlockingAPISpec extends FunSuite {
       val count2 = Query(Users.length).first
       assert(count2 == 2)
 
+      models.Tables.schema.remove
+    }
+  }
+
+  test("Plain SQL"){
+    db.withSession { implicit session =>
+      models.Tables.schema.create
+
       // plain sql
-      val id = 1
-      val name = "takezoe"
-      val insert = sqlu"INSERT INTO USERS (ID, NAME) VALUES (${id}, ${name})"
-      insert.execute
+      val id1 = 1
+      val name1 = "takezoe"
+      val insert1 = sqlu"INSERT INTO USERS (ID, NAME) VALUES (${id1}, ${name1})"
+      insert1.execute
 
       val query = sql"SELECT COUNT(*) FROM USERS".as[Int]
-      val count3 = query.first
-      assert(count3 == 3)
+      val count1 = query.first
+      assert(count1 == 1)
+
+      val id2 = 2
+      val name2 = "chibochibo"
+      val insert2 = sqlu"INSERT INTO USERS (ID, NAME) VALUES (${id2}, ${name2})"
+      insert2.execute
+
+      val count2 = query.first
+      assert(count2 == 2)
+
+      models.Tables.schema.remove
+    }
+  }
+
+  test("exists"){
+    db.withSession { implicit session =>
+      models.Tables.schema.create
+
+      val exists1 = Users.filter(_.id === 1L.bind).filter(_.name === "takezoe".bind).exists.run
+      assert(exists1 == false)
+
+      Users.insert(UsersRow(1, "takezoe", None))
+
+      val exists2 = Users.filter(_.id === 1L.bind).filter(_.name === "takezoe".bind).exists.run
+      assert(exists2 == true)
+
+      models.Tables.schema.remove
     }
   }
 

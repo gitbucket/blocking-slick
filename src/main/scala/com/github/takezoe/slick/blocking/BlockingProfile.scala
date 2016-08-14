@@ -4,7 +4,7 @@ import slick.ast.{CompiledStatement, Node, ResultSetMapping}
 import slick.dbio.{Effect, NoStream}
 import slick.driver.{JdbcDriver, JdbcProfile}
 import slick.jdbc.{ActionBasedSQLInterpolation, JdbcBackend, JdbcResultConverterDomain, ResultSetInvoker}
-import slick.lifted.{Query, Rep}
+import slick.lifted.{FlatShapeLevel, Query, Rep, Shape}
 import slick.profile._
 import slick.relational.{CompiledMapping, ResultConverter}
 import slick.util.SQLBuilder
@@ -26,7 +26,6 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
 
   val blockingApi = new BlockingAPI with ImplicitColumnTypes {}
   implicit def actionBasedSQLInterpolation(s: StringContext) = new ActionBasedSQLInterpolation(s)
-  implicit def repToQueryExecutor[U](rep: Rep[U]): RepQueryExecutor[U] = new RepQueryExecutor(rep)
 
   /**
    * Extends DDL to add methods to create and drop tables immediately.
@@ -58,11 +57,10 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
     }
   }
 
-  class RepQueryExecutor[U](rep: Rep[U]){
-    private val tree = queryCompiler.run(rep.toNode).tree
-    private val invoker = new QueryInvoker[U](tree)
+  implicit class RepQueryExecutor[E, U, R, T](rep: Rep[E])(implicit unpack: Shape[_ <: FlatShapeLevel, Rep[E], U, R]){
+    private val invoker = new QueryInvoker[E](queryCompiler.run(Query(rep).toNode).tree)
 
-    def run(implicit session: JdbcBackend#Session): U = invoker.first
+    def run(implicit session: JdbcBackend#Session): E = invoker.first
     def selectStatement: String = invoker.selectStatement
   }
 
