@@ -143,7 +143,6 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
     }
   }
 
-  // TODO should not be use DBIO and Future
   implicit class ReturningInsertActionComposer2[T, R](a: ReturningInsertActionComposer[T, R]){
 
     def +=(value: T)(implicit session: JdbcBackend#Session): R = insert(value)
@@ -187,7 +186,6 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
 
   }
 
-  // TODO should not be use DBIO and Future
   implicit class SqlStreamingActionInvoker[R](a: SqlStreamingAction[Vector[R], R, Effect]){
 
     def first(implicit session: JdbcBackend#Session): R = {
@@ -206,7 +204,6 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
     }
   }
 
-  // TODO should not be use DBIO and Future
   implicit class SqlActionInvoker[R](a: SqlAction[R, NoStream, Effect]){
     def execute(implicit session: JdbcBackend#Session): R = {
       val f = session.database.run(a)
