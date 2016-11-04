@@ -3,7 +3,7 @@ package com.github.takezoe.slick.blocking
 import slick.ast.{CompiledStatement, Node, ResultSetMapping}
 import slick.dbio.{Effect, NoStream}
 import slick.driver.{JdbcDriver, JdbcProfile}
-import slick.jdbc.{ActionBasedSQLInterpolation, JdbcBackend, JdbcResultConverterDomain, ResultSetInvoker}
+import slick.jdbc.{ActionBasedSQLInterpolation, JdbcBackend, JdbcResultConverterDomain}
 import slick.lifted.{FlatShapeLevel, Query, Rep, Shape}
 import slick.profile._
 import slick.relational.{CompiledMapping, ResultConverter}
@@ -186,29 +186,14 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
 
   }
 
-  implicit class SqlStreamingActionInvoker[R](a: SqlStreamingAction[Vector[R], R, Effect]){
-
-    def first(implicit session: JdbcBackend#Session): R = {
-      val f = session.database.run(a.head)
-      Await.result(f, Duration.Inf)
-    }
-
-    def firstOption(implicit session: JdbcBackend#Session): Option[R] = {
-      val f = session.database.run(a.headOption)
-      Await.result(f, Duration.Inf)
-    }
-
-    def list(implicit session: JdbcBackend#Session): List[R] = {
-      val f = session.database.run(a)
-      Await.result(f, Duration.Inf).toList
-    }
+  implicit class SqlStreamingActionInvoker[R](action: SqlStreamingAction[Vector[R], R, Effect]){
+    def first(implicit session: JdbcBackend#Session): R = slick.SynchronousDatabaseRunner.first(action)
+    def firstOption(implicit session: JdbcBackend#Session): Option[R] = slick.SynchronousDatabaseRunner.firstOption(action)
+    def list(implicit session: JdbcBackend#Session): List[R] = slick.SynchronousDatabaseRunner.list(action)
   }
 
-  implicit class SqlActionInvoker[R](a: SqlAction[R, NoStream, Effect]){
-    def execute(implicit session: JdbcBackend#Session): R = {
-      val f = session.database.run(a)
-      Await.result(f, Duration.Inf)
-    }
+  implicit class SqlActionInvoker[R](action: SqlAction[R, NoStream, Effect]){
+    def execute(implicit session: JdbcBackend#Session): R = slick.SynchronousDatabaseRunner.execute(action)
   }
 
 }
