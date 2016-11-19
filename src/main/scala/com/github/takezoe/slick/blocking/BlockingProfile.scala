@@ -1,7 +1,9 @@
 package com.github.takezoe.slick.blocking
 
+import java.sql.Connection
+
 import slick.ast.{CompiledStatement, Node, ResultSetMapping}
-import slick.dbio.{Effect, NoStream}
+import slick.dbio.{Effect, NoStream, SynchronousDatabaseAction}
 import slick.driver.{JdbcDriver, JdbcProfile}
 import slick.jdbc.{ActionBasedSQLInterpolation, JdbcBackend, JdbcResultConverterDomain}
 import slick.lifted.{FlatShapeLevel, Query, Rep, Shape}
@@ -9,8 +11,6 @@ import slick.profile._
 import slick.relational.{CompiledMapping, ResultConverter}
 import slick.util.SQLBuilder
 
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 import scala.language.existentials
 import scala.language.higherKinds
 import scala.language.reflectiveCalls
@@ -45,13 +45,13 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
       }
     }
 
-    def remove(implicit session: JdbcBackend#Session): Unit = {
+    def remove(implicit s: JdbcBackend#Session): Unit = {
       schema.dropStatements.foreach { sql =>
-        val s = session.conn.createStatement()
+        val session = s.conn.createStatement()
         try {
-          s.executeUpdate(sql)
+          session.executeUpdate(sql)
         } finally {
-          s.close()
+          session.close()
         }
       }
     }
@@ -60,7 +60,7 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
   implicit class RepQueryExecutor[E, U, R, T](rep: Rep[E])(implicit unpack: Shape[_ <: FlatShapeLevel, Rep[E], U, R]){
     private val invoker = new QueryInvoker[E](queryCompiler.run(Query(rep).toNode).tree)
 
-    def run(implicit session: JdbcBackend#Session): E = invoker.first
+    def run(implicit s: JdbcBackend#Session): E = invoker.first
     def selectStatement: String = invoker.selectStatement
   }
 
@@ -87,35 +87,35 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
       sres.sql
     }
 
-    def list(implicit session: JdbcBackend#Session): List[U] = {
+    def list(implicit s: JdbcBackend#Session): List[U] = {
       val invoker = new QueryInvoker[U](queryCompiler.run(q.toNode).tree)
       invoker.results(0).right.get.toList
     }
 
-    def first(implicit session: JdbcBackend#Session): U = {
+    def first(implicit s: JdbcBackend#Session): U = {
       val invoker = new QueryInvoker[U](queryCompiler.run(q.toNode).tree)
       invoker.first
     }
 
-    def firstOption(implicit session: JdbcBackend#Session): Option[U] = {
+    def firstOption(implicit s: JdbcBackend#Session): Option[U] = {
       val invoker = new QueryInvoker[U](queryCompiler.run(q.toNode).tree)
       invoker.firstOption
     }
 
-    def delete(implicit session: JdbcBackend#Session): Int = {
+    def delete(implicit s: JdbcBackend#Session): Int = {
       val tree = deleteCompiler.run(q.toNode).tree
       val ResultSetMapping(_, CompiledStatement(_, sres: SQLBuilder.Result, _), _) = tree
-      session.withPreparedStatement(sres.sql){ st =>
+      s.withPreparedStatement(sres.sql){ st =>
         sres.setter(st, 1, null)
         st.executeUpdate
       }
     }
 
-    def update(value: U)(implicit session: JdbcBackend#Session): Int = {
+    def update(value: U)(implicit s: JdbcBackend#Session): Int = {
       val tree = updateCompiler.run(q.toNode).tree
       val ResultSetMapping(_, CompiledStatement(_, sres: SQLBuilder.Result, _), CompiledMapping(_converter, _)) = tree
       val converter = _converter.asInstanceOf[ResultConverter[JdbcResultConverterDomain, U]]
-      session.withPreparedInsertStatement(sres.sql) { st =>
+      s.withPreparedInsertStatement(sres.sql) { st =>
         st.clearParameters
         converter.set(value, st)
         sres.setter(st, converter.width + 1, null)
@@ -125,31 +125,38 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
 
     def +=(value: U)(implicit session: JdbcBackend#Session): Int = insert(value)
 
-    def insert(value: U)(implicit session: JdbcBackend#Session): Int = {
+    def insert(value: U)(implicit s: JdbcBackend#Session): Int = {
       val compiled = compileInsert(q.toNode)
       val a = compiled.standardInsert
-      session.withPreparedStatement(a.sql) { st =>
+      s.withPreparedStatement(a.sql) { st =>
         st.clearParameters()
         a.converter.set(value, st)
         st.executeUpdate()
       }
     }
 
-    def ++=(values: U*)(implicit session: JdbcBackend#Session): Int = insertAll(values: _*)
+    def ++=(values: U*)(implicit s: JdbcBackend#Session): Int = insertAll(values: _*)
 
     // TODO should be batch insert
-    def insertAll(values: U*)(implicit session: JdbcBackend#Session): Int = {
+    def insertAll(values: U*)(implicit s: JdbcBackend#Session): Int = {
       values.map { value => insert(value) }.sum
     }
   }
 
-  implicit class ReturningInsertActionComposer2[T, R](a: ReturningInsertActionComposer[T, R]){
+  implicit class ReturningInsertActionComposer2[T, R](a: ReturningInsertActionComposer[T, R]) extends JdbcBackend {
 
-    def +=(value: T)(implicit session: JdbcBackend#Session): R = insert(value)
+    def +=(value: T)(implicit s: JdbcBackend#Session): R = insert(value)
 
-    def insert(value: T)(implicit session: JdbcBackend#Session): R = {
-      val f = session.database.run(a += value)
-      Await.result(f, Duration.Inf)
+    def insert(value: T)(implicit s: JdbcBackend#Session): R = {
+      (a += value) match {
+        case a: SynchronousDatabaseAction[R, _, JdbcBackend, _] => {
+          a.run(new JdbcActionContext(){
+            val useSameThread = true
+            override def session: Session = s.asInstanceOf[Session]
+            override def connection: Connection = s.conn
+          })
+        }
+      }
     }
 
   }
@@ -187,13 +194,13 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
   }
 
   implicit class SqlStreamingActionInvoker[R](action: SqlStreamingAction[Vector[R], R, Effect]){
-    def first(implicit session: JdbcBackend#Session): R = slick.SynchronousDatabaseRunner.first(action)
-    def firstOption(implicit session: JdbcBackend#Session): Option[R] = slick.SynchronousDatabaseRunner.firstOption(action)
-    def list(implicit session: JdbcBackend#Session): List[R] = slick.SynchronousDatabaseRunner.list(action)
+    def first(implicit s: JdbcBackend#Session): R = slick.SynchronousDatabaseRunner.first(action)
+    def firstOption(implicit s: JdbcBackend#Session): Option[R] = slick.SynchronousDatabaseRunner.firstOption(action)
+    def list(implicit s: JdbcBackend#Session): List[R] = slick.SynchronousDatabaseRunner.list(action)
   }
 
   implicit class SqlActionInvoker[R](action: SqlAction[R, NoStream, Effect]){
-    def execute(implicit session: JdbcBackend#Session): R = slick.SynchronousDatabaseRunner.execute(action)
+    def execute(implicit s: JdbcBackend#Session): R = slick.SynchronousDatabaseRunner.execute(action)
   }
 
 }
