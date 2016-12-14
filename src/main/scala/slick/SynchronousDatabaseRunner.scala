@@ -2,7 +2,7 @@ package slick
 
 import slick.dbio.{Effect, NoStream}
 import slick.jdbc.JdbcBackend
-import slick.profile.{SqlAction, SqlStreamingAction}
+import slick.sql.{SqlAction, SqlStreamingAction}
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration

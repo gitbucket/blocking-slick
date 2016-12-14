@@ -4,11 +4,11 @@ organization := "com.github.takezoe"
 
 version := "0.0.3-SNAPSHOT"
 
-scalaVersion := "2.11.8"
+scalaVersion := "2.12.1"
 
 libraryDependencies ++= Seq(
-  "com.typesafe.slick" %% "slick"     % "3.1.1",
-  "org.scalatest"      %% "scalatest" % "2.2.6"   % "test",
+  "com.typesafe.slick" %% "slick"     % "3.2.0-M2",
+  "org.scalatest"      %% "scalatest" % "3.0.1"   % "test",
   "com.h2database"      % "h2"        % "1.4.192" % "test"
 )
 
