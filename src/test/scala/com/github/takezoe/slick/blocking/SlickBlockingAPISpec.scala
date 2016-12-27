@@ -5,7 +5,8 @@ import org.scalatest.FunSuite
 class SlickBlockingAPISpec extends FunSuite {
 
   import BlockingH2Driver._
-  import BlockingH2Driver.blockingApi._
+  // queryInsertActionExtensionMethods is conflicted with BlockingH2Driver.InsertActionExtensionMethods
+  import BlockingH2Driver.blockingApi.{ queryInsertActionExtensionMethods => _, _ }
   import models.Tables._
 
   private val db = Database.forURL("jdbc:h2:mem:test")
@@ -86,6 +87,26 @@ class SlickBlockingAPISpec extends FunSuite {
       assert(exists2 == true)
 
       models.Tables.schema.remove
+    }
+  }
+
+  test("insertAll"){
+    db.withSession { implicit session =>
+      models.Tables.schema.create
+
+      val users = List(
+        UsersRow(1, "takezoe", None),
+        UsersRow(2, "chibochibo", None),
+        UsersRow(3, "tanacasino", None)
+      )
+
+      Users.insertAll(users: _*)
+      val count1 = Query(Users.length).first
+      assert(count1 == 3)
+
+      Users ++= users
+      val count2 = Query(Users.length).first
+      assert(count2 == 6)
     }
   }
 
