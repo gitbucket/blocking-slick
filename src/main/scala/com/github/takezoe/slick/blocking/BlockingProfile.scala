@@ -132,7 +132,7 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
       }
     }
 
-    def ++=(values: U*)(implicit s: JdbcBackend#Session): Int = insertAll(values: _*)
+    def ++=(values: Iterable[U])(implicit s: JdbcBackend#Session): Int = insertAll(values.toSeq: _*)
 
     // TODO should be batch insert
     def insertAll(values: U*)(implicit s: JdbcBackend#Session): Int = {
