@@ -1,4 +1,4 @@
-blocking-slick
+blocking-slick [![Build Status](https://travis-ci.org/takezoe/blocking-slick.svg?branch=master)](https://travis-ci.org/takezoe/blocking-slick)
 ==============
 
 Provides blocking API for Slick3
