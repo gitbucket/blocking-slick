@@ -2,6 +2,7 @@ package com.github.takezoe.slick.blocking
 
 import java.sql.Connection
 
+import slick.SlickException
 import slick.ast.{CompiledStatement, Node, ResultSetMapping}
 import slick.dbio.{Effect, NoStream, SynchronousDatabaseAction}
 import slick.jdbc.{ActionBasedSQLInterpolation, JdbcBackend, JdbcProfile, JdbcResultConverterDomain}
@@ -134,9 +135,30 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
 
     def ++=(values: Iterable[U])(implicit s: JdbcBackend#Session): Int = insertAll(values.toSeq: _*)
 
-    // TODO should be batch insert
     def insertAll(values: U*)(implicit s: JdbcBackend#Session): Int = {
-      values.map { value => insert(value) }.sum
+      def retManyBatch[U](st: java.sql.Statement, values: Iterable[U], updateCounts: Array[Int]): Int = {
+        var unknown = false
+        var count = 0
+        for((res, idx) <- updateCounts.zipWithIndex) res match {
+          case java.sql.Statement.SUCCESS_NO_INFO => unknown = true
+          case java.sql.Statement.EXECUTE_FAILED => throw new SlickException("Failed to insert row #" + (idx+1))
+          case i => count += i
+        }
+        if(unknown) 0 else count
+      }
+
+      val compiled = compileInsert(q.toNode)
+      val a = compiled.standardInsert
+      s.withPreparedStatement(a.sql) { st =>
+        st.clearParameters()
+
+        for(value <- values){
+          a.converter.set(value, st)
+          st.addBatch()
+        }
+        val counts = st.executeBatch()
+        retManyBatch(st, values, counts)
+      }
     }
   }
 
@@ -146,7 +168,7 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
 
     def insert(value: T)(implicit s: JdbcBackend#Session): R = {
       (a += value) match {
-        case a: SynchronousDatabaseAction[R, _, JdbcBackend, _] => {
+        case a: SynchronousDatabaseAction[R, _, JdbcBackend, _] @unchecked => {
           a.run(new JdbcActionContext(){
             val useSameThread = true
             override def session: Session = s.asInstanceOf[Session]
