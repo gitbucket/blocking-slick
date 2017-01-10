@@ -9,7 +9,7 @@ Usage
 Add following dependency to your `build.sbt`:
 
 ```scala
-libraryDependencies += "com.github.takezoe" %% "blocking-slick" % "0.0.3"
+libraryDependencies += "com.github.takezoe" %% "blocking-slick" % "0.0.4"
 ```
 
 You can enable blocking API by import the blocking driver as follows:
