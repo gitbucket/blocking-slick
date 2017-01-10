@@ -20,7 +20,7 @@ trait BlockingRelationalProfile extends RelationalProfile {
   trait BlockingAPI extends API {}
 }
 
-trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
+trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile with slick.TransactionalJdbcProfile {
 
   val blockingApi = new BlockingAPI with ImplicitColumnTypes {}
   implicit def actionBasedSQLInterpolation(s: StringContext) = new ActionBasedSQLInterpolation(s)
