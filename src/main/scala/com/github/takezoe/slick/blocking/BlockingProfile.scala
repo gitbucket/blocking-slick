@@ -194,22 +194,8 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile wit
       }
     }
 
-    def withTransaction[T](f: (JdbcBackend#Session) => T): T = {
-      val session = db.createSession()
-      session.conn.setAutoCommit(false)
-      try {
-        val result = f(session)
-        session.conn.commit()
-        result
-      } catch {
-        case e: Exception =>
-          session.conn.rollback()
-          throw e
-      } finally {
-        session.close()
-      }
-    }
-
+    def withTransaction[T](f: (JdbcBackend#Session) => T): T =
+      withSession { s => s.withTransaction(f(s)) }
   }
 
   implicit class SqlStreamingActionInvoker[R](action: SqlStreamingAction[Vector[R], R, Effect]){
