@@ -110,4 +110,58 @@ class SlickBlockingAPISpec extends FunSuite {
     }
   }
 
+  test("withTransaction"){
+    db.withSession { implicit session =>
+      models.Tables.schema.create
+
+      { // rollback
+        session.withTransaction {
+          Users.insert(UsersRow(1, "takezoe", None))
+          val exists = Users.filter(_.id === 1L.bind).exists.run
+          assert(exists == true)
+          session.conn.rollback()
+        }
+        val exists = Users.filter(_.id === 1L.bind).exists.run
+        assert(exists == false)
+      }
+
+      { // ok
+        session.withTransaction {
+          Users.insert(UsersRow(2, "takezoe", None))
+          val exists = Users.filter(_.id === 2L.bind).exists.run
+          assert(exists == true)
+        }
+        val exists = Users.filter(_.id === 2L.bind).exists.run
+        assert(exists == true)
+      }
+
+      { // nest (rollback)
+        session.withTransaction {
+          Users.insert(UsersRow(3, "takezoe", None))
+          assert(Users.filter(_.id === 3L.bind).exists.run == true)
+          session.withTransaction {
+            Users.insert(UsersRow(4, "takezoe", None))
+            assert(Users.filter(_.id === 4L.bind).exists.run == true)
+            session.conn.rollback()
+          }
+        }
+        assert(Users.filter(_.id === 3L.bind).exists.run == false)
+        assert(Users.filter(_.id === 4L.bind).exists.run == false)
+      }
+
+      { // nest (ok)
+        session.withTransaction {
+          Users.insert(UsersRow(5, "takezoe", None))
+          assert(Users.filter(_.id === 5L.bind).exists.run == true)
+          session.withTransaction {
+            Users.insert(UsersRow(6, "takezoe", None))
+            assert(Users.filter(_.id === 6L.bind).exists.run == true)
+          }
+        }
+        assert(Users.filter(_.id === 5L.bind).exists.run == true)
+        assert(Users.filter(_.id === 6L.bind).exists.run == true)
+      }
+    }
+  }
+
 }
