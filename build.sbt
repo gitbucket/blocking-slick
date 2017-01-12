@@ -6,6 +6,8 @@ version := "0.0.4"
 
 scalaVersion := "2.12.1"
 
+crossScalaVersions := List("2.11.8", "2.12.1")
+
 libraryDependencies ++= Seq(
   "com.typesafe.slick" %% "slick"     % "3.2.0-M2",
   "org.scalatest"      %% "scalatest" % "3.0.1"   % "test",
@@ -21,6 +23,8 @@ publishTo <<= version { (v: String) =>
 }
 
 scalacOptions := Seq("-deprecation", "-feature")
+
+fork in Test := true
 
 publishArtifact in Test := false
 
