@@ -15,9 +15,10 @@ project/plugins/project/
 .scala_dependencies
 .classpath
 .project
-.cache
+.cache*
 .settings
 
 # IntelliJ specific
 .idea/
 .idea_modules/
+/bin/

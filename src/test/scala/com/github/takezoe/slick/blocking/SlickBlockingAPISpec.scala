@@ -2,6 +2,8 @@ package com.github.takezoe.slick.blocking
 
 import org.scalatest.FunSuite
 import slick.jdbc.meta.MTable
+import scala.concurrent.{Await, Future}
+import scala.concurrent.duration.Duration
 
 class SlickBlockingAPISpec extends FunSuite {
 
@@ -10,7 +12,7 @@ class SlickBlockingAPISpec extends FunSuite {
   import BlockingH2Driver.blockingApi.{ queryInsertActionExtensionMethods => _, _ }
   import models.Tables._
 
-  private val db = Database.forURL("jdbc:h2:mem:test")
+  private val db = Database.forURL("jdbc:h2:mem:test;TRACE_LEVEL_FILE=4")
 
   test("CRUD operation"){
     db.withSession { implicit session =>
@@ -170,6 +172,44 @@ class SlickBlockingAPISpec extends FunSuite {
       models.Tables.schema.create
       
       assert(MTable.getTables.list.length == 2)
+    }
+  }
+
+  test("Transaction support with Query SELECT FOR UPDATE"){
+    testTransactionWithSelectForUpdate { implicit session =>
+      Users.map(_.id).forUpdate.list
+    }
+  }
+
+  test("Transaction support with Action SELECT FOR UPDATE"){
+    testTransactionWithSelectForUpdate { implicit session =>
+      sql"select id from USERS for update".as[Long].list
+    }
+  }
+  
+  private def testTransactionWithSelectForUpdate(selectForUpdate: Session => Seq[Long]) = {
+    import scala.concurrent.ExecutionContext.Implicits.global
+    db.withSession { implicit session =>
+      models.Tables.schema.create
+      
+      // Insert
+      Users.insert(UsersRow(1, "takezoe", None))
+      
+      //concurrently do a select for update
+      val f1 = Future{db.withTransaction { implicit session =>
+        val l = selectForUpdate(session).length
+        Thread.sleep(5000l)
+        l
+      }}
+      
+      //and try to update a row
+      val f2 = Future{db.withTransaction { implicit session =>
+        Thread.sleep(1000l)
+        Users.filter(_.id === 1L).map(_.name).update("João")
+      }}
+      
+      assert(Await.result(f1, Duration.Inf) == 1)
+      assertThrows[Exception](Await.result(f2, Duration.Inf))
     }
   }
 
