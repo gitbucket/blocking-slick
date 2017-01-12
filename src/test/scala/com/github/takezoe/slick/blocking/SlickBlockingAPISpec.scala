@@ -1,6 +1,7 @@
 package com.github.takezoe.slick.blocking
 
 import org.scalatest.FunSuite
+import slick.jdbc.meta.MTable
 
 class SlickBlockingAPISpec extends FunSuite {
 
@@ -161,6 +162,14 @@ class SlickBlockingAPISpec extends FunSuite {
         assert(Users.filter(_.id === 5L.bind).exists.run == true)
         assert(Users.filter(_.id === 6L.bind).exists.run == true)
       }
+    }
+  }
+  
+  test("MTable support"){
+    db.withSession { implicit session =>
+      models.Tables.schema.create
+      
+      assert(MTable.getTables.list.length == 2)
     }
   }
 
