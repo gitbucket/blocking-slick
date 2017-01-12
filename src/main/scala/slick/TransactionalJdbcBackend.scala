@@ -19,7 +19,6 @@ trait TransactionalJdbcProfile {
   implicit class BlockingSession(session: JdbcBackend#Session) {
     def withTransaction[T](f: => T): T = {
       val s = session.asInstanceOf[JdbcBackend#BaseSession]
-      s.isInTransaction
       if(s.isInTransaction) f else {
         s.startInTransaction
         var done = false
