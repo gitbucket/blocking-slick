@@ -1,7 +1,5 @@
 package com.github.takezoe.slick.blocking
 
-import java.sql.Connection
-
 import slick.SlickException
 import slick.ast.{CompiledStatement, Node, ResultSetMapping}
 import slick.basic.BasicStreamingAction
@@ -170,11 +168,7 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile wit
     def insert(value: T)(implicit s: JdbcBackend#Session): R = {
       (a += value) match {
         case a: SynchronousDatabaseAction[R, _, JdbcBackend, _] @unchecked => {
-          a.run(new JdbcActionContext(){
-            val useSameThread = true
-            override def session: Session = s.asInstanceOf[Session]
-            override def connection: Connection = s.conn
-          })
+          a.run(new BlockingJdbcActionContext(s))
         }
       }
     }
@@ -200,13 +194,13 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile wit
   }
 
   implicit class SqlStreamingActionInvoker[R, E <: Effect](action: BasicStreamingAction[Vector[R], R, E]){
-    def first(implicit s: JdbcBackend#Session): R = slick.SynchronousDatabaseRunner.first(action)
-    def firstOption(implicit s: JdbcBackend#Session): Option[R] = slick.SynchronousDatabaseRunner.firstOption(action)
-    def list(implicit s: JdbcBackend#Session): List[R] = slick.SynchronousDatabaseRunner.list(action)
+    def first(implicit s: JdbcBackend#Session): R = SynchronousDatabaseRunner.first(action)
+    def firstOption(implicit s: JdbcBackend#Session): Option[R] = SynchronousDatabaseRunner.firstOption(action)
+    def list(implicit s: JdbcBackend#Session): List[R] = SynchronousDatabaseRunner.list(action)
   }
 
   implicit class SqlActionInvoker[R](action: SqlAction[R, NoStream, Effect]){
-    def execute(implicit s: JdbcBackend#Session): R = slick.SynchronousDatabaseRunner.execute(action)
+    def execute(implicit s: JdbcBackend#Session): R = SynchronousDatabaseRunner.execute(action)
   }
 
 }
