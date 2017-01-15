@@ -113,56 +113,73 @@ class SlickBlockingAPISpec extends FunSuite {
     }
   }
 
-  test("withTransaction"){
+  test("withTransaction Query"){
+    withTransaction(
+       u => s => Users.insert(u)(s),
+      id => s => Users.filter(_.id === id.bind).exists.run(s)
+    )
+  }
+  
+  test("withTransaction Action"){
+    withTransaction(
+       u => s => sqlu"insert into users values (${u.id}, ${u.name}, ${u.companyId})".execute(s),
+      id => s => sql"select exists (select * from users where id = $id)".as[Boolean].first(s)
+    )
+  }
+  
+  private def withTransaction(
+    insertUser: UsersRow => Session => Int,
+    existsUser: Long => Session => Boolean
+  ) = {
     db.withSession { implicit session =>
       models.Tables.schema.create
 
       { // rollback
         session.withTransaction {
-          Users.insert(UsersRow(1, "takezoe", None))
-          val exists = Users.filter(_.id === 1L.bind).exists.run
+          insertUser(UsersRow(1, "takezoe", None))(session)
+          val exists = existsUser(1)(session)
           assert(exists == true)
           session.conn.rollback()
         }
-        val exists = Users.filter(_.id === 1L.bind).exists.run
+        val exists = existsUser(1)(session)
         assert(exists == false)
       }
 
       { // ok
         session.withTransaction {
-          Users.insert(UsersRow(2, "takezoe", None))
-          val exists = Users.filter(_.id === 2L.bind).exists.run
+          insertUser(UsersRow(2, "takezoe", None))(session)
+          val exists = existsUser(2)(session)
           assert(exists == true)
         }
-        val exists = Users.filter(_.id === 2L.bind).exists.run
+        val exists = existsUser(2)(session)
         assert(exists == true)
       }
 
       { // nest (rollback)
         session.withTransaction {
-          Users.insert(UsersRow(3, "takezoe", None))
-          assert(Users.filter(_.id === 3L.bind).exists.run == true)
+          insertUser(UsersRow(3, "takezoe", None))(session)
+          assert(existsUser(3)(session) == true)
           session.withTransaction {
-            Users.insert(UsersRow(4, "takezoe", None))
-            assert(Users.filter(_.id === 4L.bind).exists.run == true)
+            insertUser(UsersRow(4, "takezoe", None))(session)
+            assert(existsUser(4)(session) == true)
             session.conn.rollback()
           }
         }
-        assert(Users.filter(_.id === 3L.bind).exists.run == false)
-        assert(Users.filter(_.id === 4L.bind).exists.run == false)
+        assert(existsUser(3)(session) == false)
+        assert(existsUser(4)(session)== false)
       }
 
       { // nest (ok)
         session.withTransaction {
-          Users.insert(UsersRow(5, "takezoe", None))
-          assert(Users.filter(_.id === 5L.bind).exists.run == true)
+          insertUser(UsersRow(5, "takezoe", None))(session)
+          assert(existsUser(5)(session) == true)
           session.withTransaction {
-            Users.insert(UsersRow(6, "takezoe", None))
-            assert(Users.filter(_.id === 6L.bind).exists.run == true)
+            insertUser(UsersRow(6, "takezoe", None))(session)
+            assert(existsUser(6)(session) == true)
           }
         }
-        assert(Users.filter(_.id === 5L.bind).exists.run == true)
-        assert(Users.filter(_.id === 6L.bind).exists.run == true)
+        assert(existsUser(5)(session) == true)
+        assert(existsUser(6)(session) == true)
       }
     }
   }
@@ -198,13 +215,14 @@ class SlickBlockingAPISpec extends FunSuite {
       //concurrently do a select for update
       val f1 = Future{db.withTransaction { implicit session =>
         val l = selectForUpdate(session).length
-        Thread.sleep(5000l)
+        //default h2 lock timeout is 1000ms
+        Thread.sleep(3000l)
         l
       }}
       
       //and try to update a row
       val f2 = Future{db.withTransaction { implicit session =>
-        Thread.sleep(1000l)
+        Thread.sleep(500l)
         Users.filter(_.id === 1L).map(_.name).update("João")
       }}
       

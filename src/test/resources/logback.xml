@@ -8,8 +8,8 @@
     </encoder>
   </appender>
 
-<!--   <logger name="slick.jdbc.JdbcBackend.statement" level="DEBUG"></logger> -->
-  <logger name="h2database" level="WARN"></logger>
+  <logger name="slick.jdbc.JdbcBackend.statement" level="OFF"></logger>
+  <logger name="h2database" level="OFF"></logger>
   <root level="INFO">
     <appender-ref ref="STDOUT" />
   </root>
