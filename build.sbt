@@ -1,15 +1,15 @@
-name := "blocking-slick"
+name := "blocking-slick-31"
 
 organization := "com.github.takezoe"
 
 version := "0.0.4"
 
-scalaVersion := "2.12.1"
+scalaVersion := "2.11.8"
 
-crossScalaVersions := List("2.11.8", "2.12.1")
+crossScalaVersions := List("2.10.6", "2.11.8")
 
 libraryDependencies ++= Seq(
-  "com.typesafe.slick" %% "slick"           % "3.2.0-M2",
+  "com.typesafe.slick" %% "slick"           % "3.1.1",
   "org.scalatest"      %% "scalatest"       % "3.0.1"   % "test",
   "com.h2database"      % "h2"              % "1.4.192" % "test",
   "ch.qos.logback"      % "logback-classic" % "1.1.8"   % "test"
