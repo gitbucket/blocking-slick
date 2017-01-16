@@ -4,12 +4,11 @@ import java.sql.Connection
 
 import slick.SlickException
 import slick.ast.{CompiledStatement, Node, ResultSetMapping}
-import slick.basic.BasicStreamingAction
-import slick.dbio.{Effect, NoStream, SynchronousDatabaseAction}
+import slick.basic.{BasicAction, BasicStreamingAction}
+import slick.dbio.{Effect, NoStream, Streaming, SynchronousDatabaseAction}
 import slick.jdbc.{ActionBasedSQLInterpolation, JdbcBackend, JdbcProfile, JdbcResultConverterDomain}
 import slick.lifted.{FlatShapeLevel, Query, Rep, Shape}
 import slick.relational._
-import slick.sql.SqlAction
 import slick.util.SQLBuilder
 
 import scala.language.existentials
@@ -25,6 +24,12 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile wit
 
   val blockingApi = new BlockingAPI with ImplicitColumnTypes {}
   implicit def actionBasedSQLInterpolation(s: StringContext) = new ActionBasedSQLInterpolation(s)
+
+  private class BlockingJdbcActionContext(s: JdbcBackend#Session) extends backend.JdbcActionContext {
+    val useSameThread = true
+    override def session = s.asInstanceOf[backend.Session]
+    override def connection: Connection = s.conn
+  }
 
   /**
    * Extends DDL to add methods to create and drop tables immediately.
@@ -163,18 +168,14 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile wit
     }
   }
 
-  implicit class ReturningInsertActionComposer2[T, R](a: ReturningInsertActionComposer[T, R]) extends JdbcBackend {
+  implicit class ReturningInsertActionComposer2[T, R](a: ReturningInsertActionComposer[T, R]) {
 
     def +=(value: T)(implicit s: JdbcBackend#Session): R = insert(value)
 
     def insert(value: T)(implicit s: JdbcBackend#Session): R = {
       (a += value) match {
         case a: SynchronousDatabaseAction[R, _, JdbcBackend, _] @unchecked => {
-          a.run(new JdbcActionContext(){
-            val useSameThread = true
-            override def session: Session = s.asInstanceOf[Session]
-            override def connection: Connection = s.conn
-          })
+          a.run(new BlockingJdbcActionContext(s))
         }
       }
     }
@@ -199,14 +200,22 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile wit
       withSession { s => s.withTransaction(f(s)) }
   }
 
-  implicit class SqlStreamingActionInvoker[R, E <: Effect](action: BasicStreamingAction[Vector[R], R, E]){
-    def first(implicit s: JdbcBackend#Session): R = slick.SynchronousDatabaseRunner.first(action)
-    def firstOption(implicit s: JdbcBackend#Session): Option[R] = slick.SynchronousDatabaseRunner.firstOption(action)
-    def list(implicit s: JdbcBackend#Session): List[R] = slick.SynchronousDatabaseRunner.list(action)
+  implicit class BasicStreamingActionInvoker[R, E <: Effect](action: BasicStreamingAction[Vector[R], R, E]){
+    def first(implicit s: JdbcBackend#Session): R = {
+      action.head.asInstanceOf[SynchronousDatabaseAction[R, NoStream, JdbcBackend, E]].run(new BlockingJdbcActionContext(s))
+    }
+    def firstOption(implicit s: JdbcBackend#Session): Option[R] = {
+      action.headOption.asInstanceOf[SynchronousDatabaseAction[Option[R], NoStream, JdbcBackend, E]].run(new BlockingJdbcActionContext(s))
+    }
+    def list(implicit s: JdbcBackend#Session): List[R] = {
+      action.asInstanceOf[SynchronousDatabaseAction[Vector[R], Streaming[R], JdbcBackend, Effect]].run(new BlockingJdbcActionContext(s)).toList
+    }
   }
 
-  implicit class SqlActionInvoker[R](action: SqlAction[R, NoStream, Effect]){
-    def execute(implicit s: JdbcBackend#Session): R = slick.SynchronousDatabaseRunner.execute(action)
+  implicit class BasicActionInvoker[R](action: BasicAction[R, NoStream, Effect]){
+    def execute(implicit s: JdbcBackend#Session): R = {
+      action.asInstanceOf[SynchronousDatabaseAction[R, NoStream, JdbcBackend, Effect]].run(new BlockingJdbcActionContext(s))
+    }
   }
 
 }
