@@ -176,6 +176,19 @@ trait BlockingJdbcProfile extends BlockingRelationalProfile { profile: JdbcProfi
       }
   
     }
+
+    implicit class IntoInsertActionComposer2[T, R](a: IntoInsertActionComposer[T, R]) {
+      def +=(value: T)(implicit s: JdbcBackend#Session): R = insert(value)
+  
+      def insert(value: T)(implicit s: JdbcBackend#Session): R = {
+        (a += value) match {
+          case a: SynchronousDatabaseAction[R, _, JdbcBackend, _] @unchecked => {
+            a.run(new BlockingJdbcActionContext(s))
+          }
+        }
+      }
+  
+    }
   
     /**
      * Extends Database to add methods for session management.

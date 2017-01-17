@@ -114,6 +114,20 @@ class SlickBlockingAPISpec extends FunSuite {
     }
   }
 
+  test("insert returning"){
+    db.withSession { implicit session =>
+      Tables.schema.create
+      
+      val id = Users.returning(Users.map(_.id)) insert UsersRow(1, "takezoe", None)
+      assert(id == 1)
+      assert(Users.length.run == 1)
+      val u = (Users.returning(Users.map(_.id)).into((u, id) => u.copy(id = id))) insert UsersRow(2, "takezoe", None)
+      assert(u.id == 2)
+      assert(Users.length.run == 2)
+    }
+    
+  }
+
   test("withTransaction Query"){
     withTransaction(
        u => s => Users.insert(u)(s),
