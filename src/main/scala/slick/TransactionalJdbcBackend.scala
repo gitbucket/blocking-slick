@@ -2,7 +2,7 @@ package slick
 
 import slick.jdbc.JdbcBackend
 
-// TransactionalJdbcBackend brings back withTransaction feature from slick 2.x
+// JdbcProfileBlockingSession brings back withTransaction feature from slick 2.x
 // (it's also related with 3.0).
 //
 // It cannot use `session.rollback` because we cannot touch `protected var doRollback`.
@@ -12,7 +12,7 @@ import slick.jdbc.JdbcBackend
 // - https://github.com/slick/slick/blob/3.0/slick/src/main/scala/slick/jdbc/JdbcBackend.scala#L424
 // - https://github.com/slick/slick/blob/2.1/src/main/scala/scala/slick/jdbc/JdbcBackend.scala#L419
 // - https://github.com/slick/slick/blob/3.1/slick/src/main/scala/slick/jdbc/JdbcBackend.scala#L407
-trait TransactionalJdbcProfile {
+trait JdbcProfileBlockingSession {
   /**
    * Extends Session to add methods for session management.
    */

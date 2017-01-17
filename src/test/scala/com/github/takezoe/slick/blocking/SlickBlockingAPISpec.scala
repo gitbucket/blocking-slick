@@ -7,16 +7,17 @@ import scala.concurrent.duration.Duration
 
 class SlickBlockingAPISpec extends FunSuite {
 
-  import BlockingH2Driver._
-  // queryInsertActionExtensionMethods is conflicted with BlockingH2Driver.InsertActionExtensionMethods
-  import BlockingH2Driver.blockingApi.{ queryInsertActionExtensionMethods => _, _ }
-  import models.Tables._
+  object Tables extends {
+    val profile = BlockingH2Driver
+  } with models.Tables
+  import BlockingH2Driver.blockingApi._
+  import Tables._
 
   private val db = Database.forURL("jdbc:h2:mem:test;TRACE_LEVEL_FILE=4")
 
   test("CRUD operation"){
     db.withSession { implicit session =>
-      models.Tables.schema.create
+      Tables.schema.create
 
       // Insert
       Users.insert(UsersRow(1, "takezoe", None))
@@ -47,13 +48,13 @@ class SlickBlockingAPISpec extends FunSuite {
       val count2 = Query(Users.length).first
       assert(count2 == 2)
 
-      models.Tables.schema.remove
+      Tables.schema.remove
     }
   }
 
   test("Plain SQL"){
     db.withSession { implicit session =>
-      models.Tables.schema.create
+      Tables.schema.create
 
       // plain sql
       val id1 = 1
@@ -73,13 +74,13 @@ class SlickBlockingAPISpec extends FunSuite {
       val count2 = query.first
       assert(count2 == 2)
 
-      models.Tables.schema.remove
+      Tables.schema.remove
     }
   }
 
   test("exists"){
     db.withSession { implicit session =>
-      models.Tables.schema.create
+      Tables.schema.create
 
       val exists1 = Users.filter(_.id === 1L.bind).filter(_.name === "takezoe".bind).exists.run
       assert(exists1 == false)
@@ -89,13 +90,13 @@ class SlickBlockingAPISpec extends FunSuite {
       val exists2 = Users.filter(_.id === 1L.bind).filter(_.name === "takezoe".bind).exists.run
       assert(exists2 == true)
 
-      models.Tables.schema.remove
+      Tables.schema.remove
     }
   }
 
   test("insertAll"){
     db.withSession { implicit session =>
-      models.Tables.schema.create
+      Tables.schema.create
 
       val users = List(
         UsersRow(1, "takezoe", None),
@@ -132,7 +133,7 @@ class SlickBlockingAPISpec extends FunSuite {
     existsUser: Long => Session => Boolean
   ) = {
     db.withSession { implicit session =>
-      models.Tables.schema.create
+      Tables.schema.create
 
       { // rollback
         session.withTransaction {
@@ -186,7 +187,7 @@ class SlickBlockingAPISpec extends FunSuite {
   
   test("MTable support"){
     db.withSession { implicit session =>
-      models.Tables.schema.create
+      Tables.schema.create
       
       assert(MTable.getTables.list.length == 2)
     }
@@ -207,7 +208,7 @@ class SlickBlockingAPISpec extends FunSuite {
   private def testTransactionWithSelectForUpdate(selectForUpdate: Session => Seq[Long]) = {
     import scala.concurrent.ExecutionContext.Implicits.global
     db.withSession { implicit session =>
-      models.Tables.schema.create
+      Tables.schema.create
       
       // Insert
       Users.insert(UsersRow(1, "takezoe", None))

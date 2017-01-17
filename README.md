@@ -15,7 +15,6 @@ libraryDependencies += "com.github.takezoe" %% "blocking-slick" % "0.0.4"
 You can enable blocking API by import the blocking driver as follows:
 
 ```scala
-import com.github.takezoe.slick.blocking.BlockingH2Driver._
 import com.github.takezoe.slick.blocking.BlockingH2Driver.blockingApi._
 ```
 
