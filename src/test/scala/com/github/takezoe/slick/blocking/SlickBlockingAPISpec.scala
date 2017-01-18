@@ -207,11 +207,12 @@ class SlickBlockingAPISpec extends FunSuite {
     }
   }
 
-  test("Transaction support with Query SELECT FOR UPDATE"){
-    testTransactionWithSelectForUpdate { implicit session =>
-      Users.map(_.id).forUpdate.list
-    }
-  }
+//  slick 3.1 doesn't support forUpdate
+//  test("Transaction support with Query SELECT FOR UPDATE"){
+//    testTransactionWithSelectForUpdate { implicit session =>
+//      Users.map(_.id).forUpdate.list
+//    }
+//  }
 
   test("Transaction support with Action SELECT FOR UPDATE"){
     testTransactionWithSelectForUpdate { implicit session =>

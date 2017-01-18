@@ -2,10 +2,11 @@ package com.github.takezoe.slick.blocking
 
 import java.sql.Connection
 
-import slick.ast.{CompiledStatement, Node, ResultSetMapping}
-import slick.basic.{BasicAction, BasicStreamingAction}
+import slick.ast.{BaseTypedType, CompiledStatement, Node, ResultSetMapping}
+import slick.driver.JdbcDriver
+import slick.profile.{BasicAction, BasicStreamingAction, RelationalDriver}
 import slick.dbio.SynchronousDatabaseAction
-import slick.jdbc.{ActionBasedSQLInterpolation, JdbcBackend, JdbcProfile, JdbcResultConverterDomain}
+import slick.jdbc.{ActionBasedSQLInterpolation, JdbcBackend, JdbcResultConverterDomain}
 import slick.relational._
 import slick.util.SQLBuilder
 
@@ -13,11 +14,11 @@ import scala.language.existentials
 import scala.language.higherKinds
 import scala.language.implicitConversions
 
-trait BlockingRelationalProfile extends RelationalProfile {
+trait BlockingRelationalDriver extends RelationalDriver {
   trait BlockingAPI extends API {}
 }
 
-trait BlockingJdbcProfile extends BlockingRelationalProfile { profile: JdbcProfile =>
+trait BlockingJdbcDriver extends BlockingRelationalDriver { profile: JdbcDriver =>
   val blockingApi = new BlockingAPI {}
 
   trait BlockingAPI extends super.BlockingAPI with ImplicitColumnTypes with slick.JdbcProfileBlockingSession {
@@ -56,7 +57,7 @@ trait BlockingJdbcProfile extends BlockingRelationalProfile { profile: JdbcProfi
       }
     }
   
-    implicit class RepQueryExecutor[E, U, R, T](rep: Rep[E])(implicit unpack: Shape[_ <: FlatShapeLevel, Rep[E], U, R]){
+    implicit class RepQueryExecutor[E: BaseTypedType](rep: Rep[E]){
       private val invoker = new QueryInvoker[E](queryCompiler.run(Query(rep).toNode).tree)
   
       def run(implicit s: JdbcBackend#Session): E = invoker.first
