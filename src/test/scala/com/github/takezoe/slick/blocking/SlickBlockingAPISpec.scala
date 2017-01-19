@@ -93,6 +93,17 @@ class SlickBlockingAPISpec extends FunSuite {
       Tables.schema.remove
     }
   }
+  
+  test("sum"){
+    db.withSession { implicit session =>
+      Tables.schema.create
+
+      val sum = Users.map(_.id).sum.run
+      assert(sum == None)
+
+      Tables.schema.remove
+    }
+  }
 
   test("insertAll"){
     db.withSession { implicit session =>

@@ -2,7 +2,7 @@ package com.github.takezoe.slick.blocking
 
 import java.sql.Connection
 
-import slick.ast.{BaseTypedType, CompiledStatement, Node, ResultSetMapping}
+import slick.ast.{CompiledStatement, Node, ResultSetMapping}
 import slick.driver.JdbcDriver
 import slick.profile.{BasicAction, BasicStreamingAction, RelationalDriver}
 import slick.dbio.SynchronousDatabaseAction
@@ -57,8 +57,8 @@ trait BlockingJdbcDriver extends BlockingRelationalDriver { profile: JdbcDriver 
       }
     }
   
-    implicit class RepQueryExecutor[E: BaseTypedType](rep: Rep[E]){
-      private val invoker = new QueryInvoker[E](queryCompiler.run(Query(rep).toNode).tree)
+    implicit class RepQueryExecutor[E](rep: Rep[E]){
+      private val invoker = new QueryInvoker[E](queryCompiler.run(Query(rep)(slick.lifted.RepShape).toNode).tree)
   
       def run(implicit s: JdbcBackend#Session): E = invoker.first
       def selectStatement: String = invoker.selectStatement
