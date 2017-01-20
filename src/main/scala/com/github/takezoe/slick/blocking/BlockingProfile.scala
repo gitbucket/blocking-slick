@@ -34,26 +34,12 @@ trait BlockingJdbcDriver extends BlockingRelationalDriver { profile: JdbcDriver 
      * Extends DDL to add methods to create and drop tables immediately.
      */
     implicit class DDLInvoker(schema: DDL){
-      def create(implicit session: JdbcBackend#Session): Unit = {
-        schema.createStatements.foreach { sql =>
-          val s = session.conn.createStatement()
-          try {
-            s.executeUpdate(sql)
-          } finally {
-            s.close()
-          }
-        }
+      def create(implicit s: JdbcBackend#Session): Unit = {
+        createSchemaActionExtensionMethods(schema).create.asInstanceOf[SynchronousDatabaseAction[Unit, NoStream, Backend, Effect]].run(new BlockingJdbcActionContext(s))
       }
   
       def remove(implicit s: JdbcBackend#Session): Unit = {
-        schema.dropStatements.foreach { sql =>
-          val session = s.conn.createStatement()
-          try {
-            session.executeUpdate(sql)
-          } finally {
-            session.close()
-          }
-        }
+        createSchemaActionExtensionMethods(schema).drop.asInstanceOf[SynchronousDatabaseAction[Unit, NoStream, Backend, Effect]].run(new BlockingJdbcActionContext(s))
       }
     }
   
@@ -104,63 +90,33 @@ trait BlockingJdbcDriver extends BlockingRelationalDriver { profile: JdbcDriver 
   
       def delete(implicit s: JdbcBackend#Session): Int = {
         val tree = deleteCompiler.run(q.toNode).tree
-        val ResultSetMapping(_, CompiledStatement(_, sres: SQLBuilder.Result, _), _) = tree
-        s.withPreparedStatement(sres.sql){ st =>
-          sres.setter(st, 1, null)
-          st.executeUpdate
-        }
+        profile.createDeleteActionExtensionMethods(tree, null).delete
+          .asInstanceOf[SynchronousDatabaseAction[Int, NoStream, JdbcBackend, Effect]].run(new BlockingJdbcActionContext(s))
       }
   
       def update(value: U)(implicit s: JdbcBackend#Session): Int = {
         val tree = updateCompiler.run(q.toNode).tree
-        val ResultSetMapping(_, CompiledStatement(_, sres: SQLBuilder.Result, _), CompiledMapping(_converter, _)) = tree
-        val converter = _converter.asInstanceOf[ResultConverter[JdbcResultConverterDomain, U]]
-        s.withPreparedInsertStatement(sres.sql) { st =>
-          st.clearParameters
-          converter.set(value, st)
-          sres.setter(st, converter.width + 1, null)
-          st.executeUpdate
-        }
+        profile.createUpdateActionExtensionMethods(tree, null).update(value)
+          .asInstanceOf[SynchronousDatabaseAction[Int, NoStream, JdbcBackend, Effect]].run(new BlockingJdbcActionContext(s))
       }
   
       def +=(value: U)(implicit session: JdbcBackend#Session): Int = insert(value)
   
       def insert(value: U)(implicit s: JdbcBackend#Session): Int = {
-        val compiled = compileInsert(q.toNode)
-        val a = compiled.standardInsert
-        s.withPreparedStatement(a.sql) { st =>
-          st.clearParameters()
-          a.converter.set(value, st)
-          st.executeUpdate()
-        }
+        profile.createInsertActionExtensionMethods(compileInsert(q.toNode)).+=(value)
+          .asInstanceOf[SynchronousDatabaseAction[Int, NoStream, JdbcBackend, Effect]].run(new BlockingJdbcActionContext(s))
       }
   
       def ++=(values: Iterable[U])(implicit s: JdbcBackend#Session): Int = insertAll(values.toSeq: _*)
   
       def insertAll(values: U*)(implicit s: JdbcBackend#Session): Int = {
-        def retManyBatch[U](st: java.sql.Statement, values: Iterable[U], updateCounts: Array[Int]): Int = {
-          var unknown = false
-          var count = 0
-          for((res, idx) <- updateCounts.zipWithIndex) res match {
-            case java.sql.Statement.SUCCESS_NO_INFO => unknown = true
-            case java.sql.Statement.EXECUTE_FAILED => throw new SlickException("Failed to insert row #" + (idx+1))
-            case i => count += i
-          }
-          if(unknown) 0 else count
-        }
-  
-        val compiled = compileInsert(q.toNode)
-        val a = compiled.standardInsert
-        s.withPreparedStatement(a.sql) { st =>
-          st.clearParameters()
-  
-          for(value <- values){
-            a.converter.set(value, st)
-            st.addBatch()
-          }
-          val counts = st.executeBatch()
-          retManyBatch(st, values, counts)
-        }
+        profile.createInsertActionExtensionMethods(compileInsert(q.toNode)).++=(values)
+          .asInstanceOf[SynchronousDatabaseAction[Option[Int], NoStream, JdbcBackend, Effect]].run(new BlockingJdbcActionContext(s)).getOrElse(0)
+      }
+      
+      def insertOrUpdate(value: U)(implicit s: JdbcBackend#Session): Int = {
+        profile.createInsertActionExtensionMethods(compileInsert(q.toNode)).insertOrUpdate(value)
+          .asInstanceOf[SynchronousDatabaseAction[Int, NoStream, JdbcBackend, Effect]].run(new BlockingJdbcActionContext(s))
       }
     }
   
