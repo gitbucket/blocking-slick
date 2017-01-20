@@ -139,6 +139,17 @@ class SlickBlockingAPISpec extends FunSuite {
     
   }
 
+  test("insert insertOrUpdate"){
+    db.withSession { implicit session =>
+      Tables.schema.create
+
+      Users.insertOrUpdate(UsersRow(1, "takezoe", None))
+      assert(Users.length.run == 1)
+      Users.insertOrUpdate(UsersRow(1, "joao", None))
+      assert(Users.length.run == 1)
+    }
+  }
+
   test("withTransaction Query"){
     withTransaction(
        u => s => Users.insert(u)(s),
