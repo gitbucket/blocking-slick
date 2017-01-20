@@ -2,8 +2,6 @@ name := "blocking-slick-31"
 
 organization := "com.github.takezoe"
 
-version := "0.0.4"
-
 scalaVersion := "2.11.8"
 
 crossScalaVersions := List("2.10.6", "2.11.8")
@@ -50,3 +48,12 @@ pomExtra := (
       </developer>
     </developers>
 )
+
+releaseCrossBuild := true
+
+releasePublishArtifactsAction := PgpKeys.publishSigned.value
+
+releaseTagName <<= (name, version) map { case (n, v) =>
+  //tagName will be like "SLICK-32-0.0.X"
+  s"${n.stripPrefix("blocking-").toUpperCase}-$v"
+}
