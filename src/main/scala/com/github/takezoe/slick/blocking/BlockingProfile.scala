@@ -5,7 +5,7 @@ import java.sql.Connection
 import slick.ast.{CompiledStatement, Node, ResultSetMapping}
 import slick.basic.{BasicAction, BasicStreamingAction}
 import slick.dbio.SynchronousDatabaseAction
-import slick.jdbc.{ActionBasedSQLInterpolation, JdbcBackend, JdbcProfile, JdbcResultConverterDomain}
+import slick.jdbc.{ActionBasedSQLInterpolation, JdbcBackend, JdbcProfile}
 import slick.relational._
 import slick.util.SQLBuilder
 
@@ -17,7 +17,7 @@ trait BlockingRelationalProfile extends RelationalProfile {
   trait BlockingAPI extends API {}
 }
 
-trait BlockingJdbcProfile extends BlockingRelationalProfile { profile: JdbcProfile =>
+trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile { profile: JdbcProfile =>
   val blockingApi = new BlockingAPI {}
 
   trait BlockingAPI extends super.BlockingAPI with ImplicitColumnTypes with slick.JdbcProfileBlockingSession {
