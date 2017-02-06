@@ -17,7 +17,7 @@ trait BlockingRelationalProfile extends RelationalProfile {
   trait BlockingAPI extends API {}
 }
 
-trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile { profile: JdbcProfile =>
+trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
   val blockingApi = new BlockingAPI {}
 
   trait BlockingAPI extends super.BlockingAPI with ImplicitColumnTypes with slick.JdbcProfileBlockingSession {
@@ -89,32 +89,32 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile { p
   
       def delete(implicit s: JdbcBackend#Session): Int = {
         val tree = deleteCompiler.run(q.toNode).tree
-        profile.createDeleteActionExtensionMethods(tree, null).delete
+        createDeleteActionExtensionMethods(tree, null).delete
           .asInstanceOf[SynchronousDatabaseAction[Int, NoStream, JdbcBackend, Effect]].run(new BlockingJdbcActionContext(s))
       }
   
       def update(value: U)(implicit s: JdbcBackend#Session): Int = {
         val tree = updateCompiler.run(q.toNode).tree
-        profile.createUpdateActionExtensionMethods(tree, null).update(value)
+        createUpdateActionExtensionMethods(tree, null).update(value)
           .asInstanceOf[SynchronousDatabaseAction[Int, NoStream, JdbcBackend, Effect]].run(new BlockingJdbcActionContext(s))
       }
   
       def +=(value: U)(implicit session: JdbcBackend#Session): Int = insert(value)
   
       def insert(value: U)(implicit s: JdbcBackend#Session): Int = {
-        profile.createInsertActionExtensionMethods(compileInsert(q.toNode)).+=(value)
+        createInsertActionExtensionMethods(compileInsert(q.toNode)).+=(value)
           .asInstanceOf[SynchronousDatabaseAction[Int, NoStream, JdbcBackend, Effect]].run(new BlockingJdbcActionContext(s))
       }
   
       def ++=(values: Iterable[U])(implicit s: JdbcBackend#Session): Int = insertAll(values.toSeq: _*)
   
       def insertAll(values: U*)(implicit s: JdbcBackend#Session): Int = {
-        profile.createInsertActionExtensionMethods(compileInsert(q.toNode)).++=(values)
+        createInsertActionExtensionMethods(compileInsert(q.toNode)).++=(values)
           .asInstanceOf[SynchronousDatabaseAction[Option[Int], NoStream, JdbcBackend, Effect]].run(new BlockingJdbcActionContext(s)).getOrElse(0)
       }
       
       def insertOrUpdate(value: U)(implicit s: JdbcBackend#Session): Int = {
-        profile.createInsertActionExtensionMethods(compileInsert(q.toNode)).insertOrUpdate(value)
+        createInsertActionExtensionMethods(compileInsert(q.toNode)).insertOrUpdate(value)
           .asInstanceOf[SynchronousDatabaseAction[Int, NoStream, JdbcBackend, Effect]].run(new BlockingJdbcActionContext(s))
       }
     }
