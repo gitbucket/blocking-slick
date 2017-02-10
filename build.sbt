@@ -57,3 +57,10 @@ releaseTagName <<= (name, version) map { case (n, v) =>
   //tagName will be like "SLICK-32-0.0.X"
   s"${n.stripPrefix("blocking-").toUpperCase}-$v"
 }
+
+scalacOptions in (Compile, doc) ++= Seq(
+  "-sourcepath",
+  (baseDirectory in LocalRootProject).value.getAbsolutePath,
+  "-doc-source-url",
+  "https://github.com/takezoe/blocking-slick/tree/" + releaseTagName.value + "€{FILE_PATH}.scala"
+)
