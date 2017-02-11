@@ -104,6 +104,13 @@ class SlickBlockingAPISpec extends FunSuite {
       Tables.schema.remove
     }
   }
+  
+  test("run"){
+    db.withSession { implicit session =>
+      Tables.schema.create
+      assert(Users.run.length == 0)
+    }
+  }
 
   test("insertAll"){
     db.withSession { implicit session =>
@@ -269,4 +276,26 @@ class SlickBlockingAPISpec extends FunSuite {
     }
   }
 
+  test("compiled support") {
+    db.withSession { implicit session =>
+      Tables.schema.create
+
+      val compiled = Compiled {i: Rep[Long] => Users.filter(_.id === i) }
+      assert(compiled(1L).run.length === 0)
+      
+      // Insert
+      val insertCompiled = Users.insertInvoker
+      insertCompiled.insert(UsersRow(1, "takezoe", None))
+      assert(compiled(1L).run.length === 1)
+      
+      //update
+      val compiledUpdate = Compiled {n: Rep[String] => Users.filter(_.name === n).map(_.name)}
+      compiledUpdate("takezoe").update("João")
+      
+      //delete
+      compiledUpdate("João").delete
+      
+      assert(compiled(1L).run.length === 0)
+    }
+  }
 }

@@ -7,6 +7,7 @@ import slick.driver.JdbcDriver
 import slick.profile.{BasicAction, BasicStreamingAction, RelationalDriver}
 import slick.dbio.SynchronousDatabaseAction
 import slick.jdbc.{ActionBasedSQLInterpolation, JdbcBackend}
+import slick.lifted.RunnableCompiled
 import slick.relational._
 import slick.util.SQLBuilder
 
@@ -44,81 +45,106 @@ trait BlockingJdbcDriver extends JdbcDriver with BlockingRelationalDriver {
     }
 
     implicit class RepQueryExecutor[E](rep: Rep[E]){
-      private val invoker = new QueryInvoker[E](queryCompiler.run(Query(rep)(slick.lifted.RepShape).toNode).tree)
+      private val invoker = new QueryInvoker[E](queryCompiler.run(Query(rep)(slick.lifted.RepShape).toNode).tree, ())
 
       def run(implicit s: JdbcBackend#Session): E = invoker.first
+      def selectStatement: String = invoker.selectStatement
+    }
+    implicit class QueryExecutor[U, C[_]](q: Query[_, U, C]) {
+      private val invoker = new QueryInvoker[U](queryCompiler.run(q.toNode).tree, ())
+
+      def run(implicit s: JdbcBackend#Session): Seq[U] = invoker.results(0).right.get.toSeq
+      def selectStatement: String = invoker.selectStatement
+    }
+
+    implicit class RunnableCompiledQueryExecutor[U, C[_]](c: RunnableCompiled[_ <: Query[_, _, C], C[U]]) {
+      private val invoker = new QueryInvoker[U](c.compiledQuery, c.param)
+
+      def run(implicit s: JdbcBackend#Session): Seq[U] = invoker.invoker.results(0).right.get.toSeq
       def selectStatement: String = invoker.selectStatement
     }
 
     /**
      * Extends QueryInvokerImpl to add selectStatement method.
      */
-    class QueryInvoker[R](tree: Node) extends QueryInvokerImpl[R](tree, null, null) {
+    class QueryInvoker[R](tree: Node, param: Any) extends QueryInvokerImpl[R](tree, param, null) {
       def selectStatement: String = getStatement
     }
 
-    /**
-     * Extends Query to add methods for CRUD operation.
-     */
-    implicit class BlockingQueryInvoker[U, C[_]](q: Query[_ ,U, C]){
-
+    class BlockingQueryInvoker[U](tree: Node, param: Any){
       def selectStatement: String = {
-        val invoker = new QueryInvoker[U](queryCompiler.run(q.toNode).tree)
+        val invoker = new QueryInvoker[U](tree, param)
         invoker.selectStatement
       }
-
-      def deleteStatement: String = {
-        val tree = deleteCompiler.run(q.toNode).tree
-        val ResultSetMapping(_, CompiledStatement(_, sres: SQLBuilder.Result, _), _) = tree
-        sres.sql
-      }
-
       def list(implicit s: JdbcBackend#Session): List[U] = {
-        val invoker = new QueryInvoker[U](queryCompiler.run(q.toNode).tree)
+        val invoker = new QueryInvoker[U](tree, param)
         invoker.results(0).right.get.toList
       }
 
       def first(implicit s: JdbcBackend#Session): U = {
-        val invoker = new QueryInvoker[U](queryCompiler.run(q.toNode).tree)
+        val invoker = new QueryInvoker[U](tree, param)
         invoker.first
       }
 
       def firstOption(implicit s: JdbcBackend#Session): Option[U] = {
-        val invoker = new QueryInvoker[U](queryCompiler.run(q.toNode).tree)
+        val invoker = new QueryInvoker[U](tree, param)
         invoker.firstOption
       }
+    }
+    implicit def queryToQueryInvoker[U, C[_]](q: Query[_ ,U, C]) = new BlockingQueryInvoker[U](queryCompiler.run(q.toNode).tree, ())
+    implicit def compiledToQueryInvoker[U, C[_]](c: RunnableCompiled[_ <: Query[_, _, C], C[U]]) = new BlockingQueryInvoker[U](c.compiledQuery, c.param)
 
+    class BlockingDeleteInvoker(protected val tree: Node, param: Any) {
+      def deleteStatement = createDeleteActionExtensionMethods(tree, param).delete.statements.head
+  
       def delete(implicit s: JdbcBackend#Session): Int = {
-        val tree = deleteCompiler.run(q.toNode).tree
-        createDeleteActionExtensionMethods(tree, null).delete
+        createDeleteActionExtensionMethods(tree, param).delete
           .asInstanceOf[SynchronousDatabaseAction[Int, NoStream, JdbcBackend, Effect]].run(new BlockingJdbcActionContext(s))
       }
+
+      def deleteInvoker: this.type = this
+    }
+    implicit def queryToDeleteInvoker[U, C[_]](q: Query[_ ,U, C]) = new BlockingDeleteInvoker(deleteCompiler.run(q.toNode).tree, ())
+    implicit def compiledToDeleteInvoker[U, C[_]](c: RunnableCompiled[_ <: Query[_, _, C], C[U]]) = new BlockingDeleteInvoker(c.compiledDelete, c.param)
+
+    class BlockingUpdateInvoker[U](tree: Node, param: Any) {
+      def updateStatement = createUpdateActionExtensionMethods(tree, param).updateStatement
 
       def update(value: U)(implicit s: JdbcBackend#Session): Int = {
-        val tree = updateCompiler.run(q.toNode).tree
-        createUpdateActionExtensionMethods(tree, null).update(value)
+        createUpdateActionExtensionMethods(tree, param).update(value)
           .asInstanceOf[SynchronousDatabaseAction[Int, NoStream, JdbcBackend, Effect]].run(new BlockingJdbcActionContext(s))
       }
+
+      def updateInvoker: this.type = this
+    }
+    implicit def queryToUpdateInvoker[U, C[_]](q: Query[_ ,U, C]) = new BlockingUpdateInvoker[U](updateCompiler.run(q.toNode).tree, ())
+    implicit def compiledToUpdateInvoker[U, C[_]](c: RunnableCompiled[_ <: Query[_, _, C], C[U]]) = new BlockingUpdateInvoker[U](c.compiledUpdate, c.param)
+
+    class BlockingInsertInvoker[U](compiled: CompiledInsert) {
 
       def +=(value: U)(implicit session: JdbcBackend#Session): Int = insert(value)
 
       def insert(value: U)(implicit s: JdbcBackend#Session): Int = {
-        createInsertActionExtensionMethods(compileInsert(q.toNode)).+=(value)
+        createInsertActionExtensionMethods(compiled).+=(value)
           .asInstanceOf[SynchronousDatabaseAction[Int, NoStream, JdbcBackend, Effect]].run(new BlockingJdbcActionContext(s))
       }
 
       def ++=(values: Iterable[U])(implicit s: JdbcBackend#Session): Int = insertAll(values.toSeq: _*)
 
       def insertAll(values: U*)(implicit s: JdbcBackend#Session): Int = {
-        createInsertActionExtensionMethods(compileInsert(q.toNode)).++=(values)
+        createInsertActionExtensionMethods(compiled).++=(values)
           .asInstanceOf[SynchronousDatabaseAction[Option[Int], NoStream, JdbcBackend, Effect]].run(new BlockingJdbcActionContext(s)).getOrElse(0)
       }
 
       def insertOrUpdate(value: U)(implicit s: JdbcBackend#Session): Int = {
-        createInsertActionExtensionMethods(compileInsert(q.toNode)).insertOrUpdate(value)
+        createInsertActionExtensionMethods(compiled).insertOrUpdate(value)
           .asInstanceOf[SynchronousDatabaseAction[Int, NoStream, JdbcBackend, Effect]].run(new BlockingJdbcActionContext(s))
       }
+
+      def insertInvoker: this.type = this
     }
+    implicit def queryToInsertInvoker[U, C[_]](q: Query[_ ,U, C]) = new BlockingInsertInvoker[U](compileInsert(q.toNode))
+    implicit def compiledToInsertInvoker[U, C[_]](c: RunnableCompiled[_ <: Query[_, _, C], C[U]]) = new BlockingInsertInvoker[U](c.compiledInsert.asInstanceOf[CompiledInsert])
 
     implicit class ReturningInsertActionComposer2[T, R](a: ReturningInsertActionComposer[T, R]) {
 
