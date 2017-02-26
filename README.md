@@ -33,6 +33,9 @@ db.withSession { implicit session =>
 
   // Insert
   Users.insert(UsersRow(1, "takezoe"))
+  
+  // Insert returning new id
+  val newID: Long = (Users returning Users.map(_.id)).insert(UsersRow(1, "takezoe"))
 
   // Select
   val users: Seq[UserRow] = Users.list
