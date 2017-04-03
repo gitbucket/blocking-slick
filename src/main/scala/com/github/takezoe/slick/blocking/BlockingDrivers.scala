@@ -8,3 +8,6 @@ object BlockingHsqldbDriver extends HsqldbProfile with BlockingJdbcProfile
 object BlockingMySQLDriver extends MySQLProfile with BlockingJdbcProfile
 object BlockingPostgresDriver extends PostgresProfile with BlockingJdbcProfile
 object BlockingSQLiteDriver extends SQLiteProfile with BlockingJdbcProfile
+object BlockingDB2Driver extends DB2Profile with BlockingJdbcProfile
+object BlockingOracleDriver extends OracleProfile with BlockingJdbcProfile
+object BlockingSQLServerDriver extends SQLServerProfile with BlockingJdbcProfile
