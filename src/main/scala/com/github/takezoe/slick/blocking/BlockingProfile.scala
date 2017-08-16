@@ -2,17 +2,14 @@ package com.github.takezoe.slick.blocking
 
 import java.sql.Connection
 
-import slick.ast.{CompiledStatement, Node, ResultSetMapping}
+import slick.ast.Node
 import slick.basic.{BasicAction, BasicStreamingAction}
 import slick.dbio.SynchronousDatabaseAction
 import slick.jdbc.{ActionBasedSQLInterpolation, JdbcBackend, JdbcProfile}
 import slick.lifted.RunnableCompiled
 import slick.relational._
-import slick.util.SQLBuilder
 
-import scala.language.existentials
-import scala.language.higherKinds
-import scala.language.implicitConversions
+import scala.language.{existentials, higherKinds, implicitConversions}
 
 trait BlockingRelationalProfile extends RelationalProfile {
   trait BlockingAPI extends API {}
@@ -156,6 +153,16 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
           }
         }
       }
+
+      def ++=(values: Iterable[T])(implicit s: JdbcBackend#Session): Seq[R] = insertAll(values.toSeq: _*)
+
+      def insertAll(values: T*)(implicit s: JdbcBackend#Session): Seq[R] = {
+        (a ++= values) match {
+          case a: SynchronousDatabaseAction[Seq[R], _, JdbcBackend, _]@unchecked => {
+            a.run(new BlockingJdbcActionContext(s))
+          }
+        }
+      }
   
     }
 
@@ -165,6 +172,16 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
       def insert(value: T)(implicit s: JdbcBackend#Session): R = {
         (a += value) match {
           case a: SynchronousDatabaseAction[R, _, JdbcBackend, _] @unchecked => {
+            a.run(new BlockingJdbcActionContext(s))
+          }
+        }
+      }
+
+      def ++=(values: Iterable[T])(implicit s: JdbcBackend#Session): Seq[R] = insertAll(values.toSeq: _*)
+
+      def insertAll(values: T*)(implicit s: JdbcBackend#Session): Seq[R] = {
+        (a ++= values) match {
+          case a: SynchronousDatabaseAction[Seq[R], _, JdbcBackend, _] @unchecked => {
             a.run(new BlockingJdbcActionContext(s))
           }
         }
