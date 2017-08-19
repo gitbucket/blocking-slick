@@ -2,7 +2,7 @@ name := "blocking-slick-32"
 
 organization := "com.github.takezoe"
 
-scalaVersion := "2.12.1"
+scalaVersion := "2.12.3"
 
 crossScalaVersions := List("2.11.8", "2.12.1")
 
