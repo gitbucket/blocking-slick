@@ -2,7 +2,8 @@ package com.github.takezoe.slick.blocking
 
 import org.scalatest.FunSuite
 import slick.jdbc.meta.MTable
-import scala.concurrent.{Await, Future}
+
+import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 
 class SlickBlockingAPISpec extends FunSuite {
@@ -308,6 +309,39 @@ class SlickBlockingAPISpec extends FunSuite {
       compiledUpdate("João").delete
       
       assert(compiled(1L).run.length === 0)
+    }
+  }
+
+  test("Plain SQL chained together"){
+    db.withSession { implicit session =>
+      Tables.schema.create
+      implicit val ctx = ExecutionContext.global
+
+      // plain sql
+      val id1 = 1
+      val id2 = 2
+      val name1 = "takezoe"
+      val name2 = "chibochibo"
+      val insert1 = sqlu"INSERT INTO USERS (ID, NAME) VALUES (${id1}, ${name1})" andThen sqlu"INSERT INTO USERS (ID, NAME) VALUES (${id2}, ${name2})"
+      insert1.run
+
+      val query = for {
+        count <- sql"SELECT COUNT(*) FROM USERS".as[Int].head
+        max <- sql"SELECT MAX(ID) FROM USERS".as[Int].head
+      } yield (count, max)
+      val (count1, max1) = query.run
+      assert(count1 == 2)
+      assert(max1 == 2)
+
+      val id3 = 3
+      val name3 = "drapp"
+      val insert2 = sqlu"INSERT INTO USERS (ID, NAME) VALUES (${id3}, ${name3})" andThen sqlu"DELETE FROM USERS WHERE ID=${id1}"
+      insert2.run
+
+      val count2 = query.run
+      assert(count2 == (2, 3))
+
+      Tables.schema.remove
     }
   }
 }

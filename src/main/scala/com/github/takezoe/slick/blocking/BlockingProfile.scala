@@ -4,7 +4,7 @@ import java.sql.Connection
 
 import slick.ast.Node
 import slick.basic.{BasicAction, BasicStreamingAction}
-import slick.dbio.SynchronousDatabaseAction
+import slick.dbio._
 import slick.jdbc.{ActionBasedSQLInterpolation, JdbcBackend, JdbcProfile}
 import slick.lifted.RunnableCompiled
 import slick.relational._
@@ -223,6 +223,25 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
       def execute(implicit s: JdbcBackend#Session): R = {
         action.asInstanceOf[SynchronousDatabaseAction[R, NoStream, JdbcBackend, Effect]].run(new BlockingJdbcActionContext(s))
       }
+    }
+
+    /**
+     * Extends plain db queries
+     */
+    implicit class RichDBIOAction[R](action: DBIOAction[R, NoStream, Effect]) {
+
+      def executeAction[T](action: DBIOAction[T, NoStream, Effect], ctx: backend.JdbcActionContext, streaming: Boolean, topLevel: Boolean): T = action match {
+        case a: SynchronousDatabaseAction[_, _, JdbcBackend, Effect] => a.run(ctx).asInstanceOf[T]
+        case FlatMapAction(base, f, ec) =>
+          val result = executeAction(base, ctx, false, topLevel)
+          executeAction(f(result), ctx, streaming, false)
+        case AndThenAction(actions) =>
+          val last = actions.length - 1
+          val results = actions.zipWithIndex.map { case (action, pos) => executeAction(action, ctx, streaming && pos == last, pos == 0)}
+          results.last.asInstanceOf[T]
+      }
+
+      def run(implicit s: JdbcBackend#Session): R = executeAction(action, new BlockingJdbcActionContext(s), false, true)
     }
   }
 }
