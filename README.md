@@ -59,18 +59,19 @@ db.withSession { implicit session =>
 
 Plain sql can be executed synchronously as well, even when composed together
 
-```
+```scala
 db.withSession { implicit session =>
   val id1 = 1
   val id2 = 2
   val name1 = "takezoe"
   val name2 = "chibochibo"
-  val insert1 = sqlu"INSERT INTO USERS (ID, NAME) VALUES (${id1}, ${name1})" andThen sqlu"INSERT INTO USERS (ID, NAME) VALUES (${id2}, ${name2})"
+  val insert1 = sqlu"INSERT INTO USERS (ID, NAME) VALUES (${id1}, ${name1})" andThen
+                sqlu"INSERT INTO USERS (ID, NAME) VALUES (${id2}, ${name2})"
   insert1.run
 
   val query = for {
     count <- sql"SELECT COUNT(*) FROM USERS".as[Int].head
-    max <- sql"SELECT MAX(ID) FROM USERS".as[Int].head
+    max   <- sql"SELECT MAX(ID) FROM USERS".as[Int].head
   } yield (count, max)
   val (count1, max1) = query.run
   assert(count1 == 2)
@@ -78,7 +79,7 @@ db.withSession { implicit session =>
 }
 ```
 
-Note that using `flatMap` and `andThen` requires an `ExecutionContext`, but if you run that code synchronously that value will be ignored
+Note that using `flatMap` and `andThen` requires an `ExecutionContext`, but if you run that code synchronously that value will be ignored.
 
 Transaction is available by using `withTransaction` instead of `withSession`:
 

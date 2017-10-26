@@ -322,7 +322,8 @@ class SlickBlockingAPISpec extends FunSuite {
       val id2 = 2
       val name1 = "takezoe"
       val name2 = "chibochibo"
-      val insert1 = sqlu"INSERT INTO USERS (ID, NAME) VALUES (${id1}, ${name1})" andThen sqlu"INSERT INTO USERS (ID, NAME) VALUES (${id2}, ${name2})"
+      val insert1 = sqlu"INSERT INTO USERS (ID, NAME) VALUES (${id1}, ${name1})" andThen
+                    sqlu"INSERT INTO USERS (ID, NAME) VALUES (${id2}, ${name2})"
       insert1.run
 
       val query = for {
@@ -335,7 +336,8 @@ class SlickBlockingAPISpec extends FunSuite {
 
       val id3 = 3
       val name3 = "drapp"
-      val insert2 = sqlu"INSERT INTO USERS (ID, NAME) VALUES (${id3}, ${name3})" andThen sqlu"DELETE FROM USERS WHERE ID=${id1}"
+      val insert2 = sqlu"INSERT INTO USERS (ID, NAME) VALUES (${id3}, ${name3})" andThen
+                    sqlu"DELETE FROM USERS WHERE ID=${id1}"
       insert2.run
 
       val count2 = query.run
