@@ -21,13 +21,17 @@ trait JdbcProfileBlockingSession {
       val s = session.asInstanceOf[JdbcBackend#BaseSession]
       if(s.isInTransaction) f else {
         s.startInTransaction
-        var done = false
+        var functionExecuted = false
         try {
           val res = f
+          functionExecuted = true
           s.endInTransaction(s.conn.commit())
-          done = true
           res
-        } finally if(!done) s.endInTransaction(s.conn.rollback())
+        } finally {
+          if(!functionExecuted) {
+            s.endInTransaction(s.conn.rollback())
+          }
+        }
       }
     }
   }
