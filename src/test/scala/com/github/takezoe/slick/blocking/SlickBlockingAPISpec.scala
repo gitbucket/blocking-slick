@@ -1,12 +1,12 @@
 package com.github.takezoe.slick.blocking
 
-import org.scalatest.FunSuite
 import slick.jdbc.meta.MTable
 
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
+import minitest._
 
-class SlickBlockingAPISpec extends FunSuite {
+object SlickBlockingAPISpec extends SimpleTestSuite {
 
   object Tables extends {
     val profile = BlockingH2Driver
@@ -285,7 +285,7 @@ class SlickBlockingAPISpec extends FunSuite {
       }}
       
       assert(Await.result(f1, Duration.Inf) == 1)
-      assertThrows[Exception](Await.result(f2, Duration.Inf))
+      intercept[Exception](Await.result(f2, Duration.Inf))
     }
   }
 
@@ -294,12 +294,12 @@ class SlickBlockingAPISpec extends FunSuite {
       Tables.schema.create
 
       val compiled = Compiled {i: Rep[Long] => Users.filter(_.id === i) }
-      assert(compiled(1L).run.length === 0)
+      assert(compiled(1L).run.length == 0)
       
       // Insert
       val insertCompiled = Users.insertInvoker
       insertCompiled.insert(UsersRow(1, "takezoe", None))
-      assert(compiled(1L).run.length === 1)
+      assert(compiled(1L).run.length == 1)
       
       //update
       val compiledUpdate = Compiled {n: Rep[String] => Users.filter(_.name === n).map(_.name)}
@@ -308,7 +308,7 @@ class SlickBlockingAPISpec extends FunSuite {
       //delete
       compiledUpdate("João").delete
       
-      assert(compiled(1L).run.length === 0)
+      assert(compiled(1L).run.length == 0)
     }
   }
 
