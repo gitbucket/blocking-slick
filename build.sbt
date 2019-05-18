@@ -2,23 +2,23 @@ name := "blocking-slick-32"
 
 organization := "com.github.takezoe"
 
-scalaVersion := "2.12.3"
+scalaVersion := "2.12.8"
 
-crossScalaVersions := List("2.11.8", "2.12.1")
+crossScalaVersions := List("2.11.12", "2.12.8")
 
 libraryDependencies ++= Seq(
-  "com.typesafe.slick" %% "slick"           % "3.2.1",
-  "org.scalatest"      %% "scalatest"       % "3.0.1"   % "test",
+  "com.typesafe.slick" %% "slick"           % "3.3.0",
+  "org.scalatest"      %% "scalatest"       % "3.0.7"   % "test",
   "com.h2database"      % "h2"              % "1.4.192" % "test",
-  "ch.qos.logback"      % "logback-classic" % "1.1.8"   % "test"
+  "ch.qos.logback"      % "logback-classic" % "1.2.3"   % "test"
 )
 
 publishMavenStyle := true
 
-publishTo <<= version { (v: String) =>
+publishTo := {
   val nexus = "https://oss.sonatype.org/"
-  if (v.trim.endsWith("SNAPSHOT")) Some("snapshots" at nexus + "content/repositories/snapshots")
-  else                             Some("releases"  at nexus + "service/local/staging/deploy/maven2")
+  if (isSnapshot.value) Some("snapshots" at nexus + "content/repositories/snapshots")
+  else                  Some("releases"  at nexus + "service/local/staging/deploy/maven2")
 }
 
 scalacOptions := Seq("-deprecation", "-feature")
@@ -53,9 +53,9 @@ releaseCrossBuild := true
 
 releasePublishArtifactsAction := PgpKeys.publishSigned.value
 
-releaseTagName <<= (name, version) map { case (n, v) =>
+releaseTagName := {
   //tagName will be like "SLICK-32-0.0.X"
-  s"${n.stripPrefix("blocking-").toUpperCase}-$v"
+  s"${name.value.stripPrefix("blocking-").toUpperCase}-${version.value}"
 }
 
 scalacOptions in (Compile, doc) ++= Seq(
