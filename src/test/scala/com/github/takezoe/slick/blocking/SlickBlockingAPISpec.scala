@@ -274,13 +274,13 @@ class SlickBlockingAPISpec extends FunSuite {
       val f1 = Future{db.withTransaction { implicit session =>
         val l = selectForUpdate(session).length
         //default h2 lock timeout is 1000ms
-        Thread.sleep(3000l)
+        Thread.sleep(3000L)
         l
       }}
       
       //and try to update a row
       val f2 = Future{db.withTransaction { implicit session =>
-        Thread.sleep(500l)
+        Thread.sleep(500L)
         Users.filter(_.id === 1L).map(_.name).update("João")
       }}
       
