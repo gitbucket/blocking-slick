@@ -9,8 +9,11 @@ Setup
 Add following dependency to your `build.sbt`:
 
 ```scala
+// for Slick 3.3
+libraryDependencies += "com.github.takezoe" %% "blocking-slick-33" % "0.0.13"
+
 // for Slick 3.2
-libraryDependencies += "com.github.takezoe" %% "blocking-slick-32" % "0.0.12"
+libraryDependencies += "com.github.takezoe" %% "blocking-slick-32" % "0.0.11"
 
 // for Slick 3.1
 libraryDependencies += "com.github.takezoe" %% "blocking-slick-31" % "0.0.7"

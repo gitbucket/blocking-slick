@@ -1,4 +1,4 @@
-name := "blocking-slick-32"
+name := "blocking-slick-33"
 
 organization := "com.github.takezoe"
 
