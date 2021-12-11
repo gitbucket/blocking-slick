@@ -1,4 +1,4 @@
-blocking-slick [![Build Status](https://travis-ci.org/takezoe/blocking-slick.svg?branch=master)](https://travis-ci.org/takezoe/blocking-slick)
+blocking-slick [![Scala CI](https://github.com/takezoe/blocking-slick/actions/workflows/scala.yml/badge.svg)](https://github.com/takezoe/blocking-slick/actions/workflows/scala.yml)
 ==============
 
 Provides Slick2 compatible blocking API for Slick3.
