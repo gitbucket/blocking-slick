@@ -293,7 +293,7 @@ class SlickBlockingAPISpec extends FunSuite {
     db.withSession { implicit session =>
       Tables.schema.create
 
-      val compiled = Compiled {i: Rep[Long] => Users.filter(_.id === i) }
+      val compiled = Compiled { (i: Rep[Long]) => Users.filter(_.id === i) }
       assert(compiled(1L).run.length === 0)
       
       // Insert
@@ -302,7 +302,7 @@ class SlickBlockingAPISpec extends FunSuite {
       assert(compiled(1L).run.length === 1)
       
       //update
-      val compiledUpdate = Compiled {n: Rep[String] => Users.filter(_.name === n).map(_.name)}
+      val compiledUpdate = Compiled { (n: Rep[String]) => Users.filter(_.name === n).map(_.name)}
       compiledUpdate("takezoe").update("João")
       
       //delete
