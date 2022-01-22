@@ -1,12 +1,12 @@
 package com.github.takezoe.slick.blocking
 
-import org.scalatest.FunSuite
+import org.scalatest.funsuite.AnyFunSuite
 import slick.jdbc.meta.MTable
 
 import scala.concurrent.{Await, ExecutionContext, Future}
 import scala.concurrent.duration.Duration
 
-class SlickBlockingAPISpec extends FunSuite {
+class SlickBlockingAPISpec extends AnyFunSuite {
 
   object Tables extends {
     val profile = BlockingH2Driver
