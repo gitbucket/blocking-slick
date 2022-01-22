@@ -87,8 +87,10 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
         invoker.firstOption
       }
     }
-    implicit def queryToQueryInvoker[U, C[_]](q: Query[_ ,U, C]) = new BlockingQueryInvoker[U](queryCompiler.run(q.toNode).tree, ())
-    implicit def compiledToQueryInvoker[U, C[_]](c: RunnableCompiled[_ <: Query[_, _, C], C[U]]) = new BlockingQueryInvoker[U](c.compiledQuery, c.param)
+    implicit def queryToQueryInvoker[U, C[_]](q: Query[_ ,U, C]): BlockingQueryInvoker[U] =
+      new BlockingQueryInvoker[U](queryCompiler.run(q.toNode).tree, ())
+    implicit def compiledToQueryInvoker[U, C[_]](c: RunnableCompiled[_ <: Query[_, _, C], C[U]]): BlockingQueryInvoker[U] =
+      new BlockingQueryInvoker[U](c.compiledQuery, c.param)
 
     class BlockingDeleteInvoker(protected val tree: Node, param: Any) {
       def deleteStatement = createDeleteActionExtensionMethods(tree, param).delete.statements.head
@@ -100,8 +102,10 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
 
       def deleteInvoker: this.type = this
     }
-    implicit def queryToDeleteInvoker[U, C[_]](q: Query[_ ,U, C]) = new BlockingDeleteInvoker(deleteCompiler.run(q.toNode).tree, ())
-    implicit def compiledToDeleteInvoker[U, C[_]](c: RunnableCompiled[_ <: Query[_, _, C], C[U]]) = new BlockingDeleteInvoker(c.compiledDelete, c.param)
+    implicit def queryToDeleteInvoker[U, C[_]](q: Query[_ ,U, C]): BlockingDeleteInvoker =
+      new BlockingDeleteInvoker(deleteCompiler.run(q.toNode).tree, ())
+    implicit def compiledToDeleteInvoker[U, C[_]](c: RunnableCompiled[_ <: Query[_, _, C], C[U]]): BlockingDeleteInvoker =
+      new BlockingDeleteInvoker(c.compiledDelete, c.param)
 
     class BlockingUpdateInvoker[U](tree: Node, param: Any) {
       def updateStatement = createUpdateActionExtensionMethods(tree, param).updateStatement
@@ -113,8 +117,10 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
 
       def updateInvoker: this.type = this
     }
-    implicit def queryToUpdateInvoker[U, C[_]](q: Query[_ ,U, C]) = new BlockingUpdateInvoker[U](updateCompiler.run(q.toNode).tree, ())
-    implicit def compiledToUpdateInvoker[U, C[_]](c: RunnableCompiled[_ <: Query[_, _, C], C[U]]) = new BlockingUpdateInvoker[U](c.compiledUpdate, c.param)
+    implicit def queryToUpdateInvoker[U, C[_]](q: Query[_ ,U, C]): BlockingUpdateInvoker[U] =
+      new BlockingUpdateInvoker[U](updateCompiler.run(q.toNode).tree, ())
+    implicit def compiledToUpdateInvoker[U, C[_]](c: RunnableCompiled[_ <: Query[_, _, C], C[U]]): BlockingUpdateInvoker[U] =
+      new BlockingUpdateInvoker[U](c.compiledUpdate, c.param)
 
     class BlockingInsertInvoker[U](compiled: CompiledInsert) {
 
@@ -139,8 +145,10 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
 
       def insertInvoker: this.type = this
     }
-    implicit def queryToInsertInvoker[U, C[_]](q: Query[_ ,U, C]) = new BlockingInsertInvoker[U](compileInsert(q.toNode))
-    implicit def compiledToInsertInvoker[U, C[_]](c: RunnableCompiled[_ <: Query[_, _, C], C[U]]) = new BlockingInsertInvoker[U](c.compiledInsert.asInstanceOf[CompiledInsert])
+    implicit def queryToInsertInvoker[U, C[_]](q: Query[_ ,U, C]): BlockingInsertInvoker[U] =
+      new BlockingInsertInvoker[U](compileInsert(q.toNode))
+    implicit def compiledToInsertInvoker[U, C[_]](c: RunnableCompiled[_ <: Query[_, _, C], C[U]]): BlockingInsertInvoker[U] =
+      new BlockingInsertInvoker[U](c.compiledInsert.asInstanceOf[CompiledInsert])
 
     implicit class ReturningInsertActionComposer2[T, R](a: ReturningInsertActionComposer[T, R]) {
   
