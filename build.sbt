@@ -30,7 +30,7 @@ publishArtifact in Test := false
 pomIncludeRepository := { _ => false }
 
 pomExtra := (
-  <url>https://github.com/takezoe/blocking-slick</url>
+  <url>https://github.com/gitbucket/blocking-slick</url>
     <licenses>
       <license>
         <name>The Apache Software License, Version 2.0</name>
@@ -38,8 +38,8 @@ pomExtra := (
       </license>
     </licenses>
     <scm>
-      <url>https://github.com/takezoe/blocking-slick</url>
-      <connection>scm:git:https://github.com/takezoe/blocking-slick.git</connection>
+      <url>https://github.com/gitbucket/blocking-slick</url>
+      <connection>scm:git:https://github.com/gitbucket/blocking-slick.git</connection>
     </scm>
     <developers>
       <developer>
@@ -62,5 +62,5 @@ scalacOptions in (Compile, doc) ++= Seq(
   "-sourcepath",
   (baseDirectory in LocalRootProject).value.getAbsolutePath,
   "-doc-source-url",
-  "https://github.com/takezoe/blocking-slick/tree/" + releaseTagName.value + "€{FILE_PATH}.scala"
+  "https://github.com/gitbucket/blocking-slick/tree/" + releaseTagName.value + "€{FILE_PATH}.scala"
 )
