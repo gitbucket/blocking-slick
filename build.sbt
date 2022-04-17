@@ -23,9 +23,9 @@ publishTo := {
 
 scalacOptions := Seq("-deprecation", "-feature")
 
-fork in Test := true
+Test / fork := true
 
-publishArtifact in Test := false
+Test / publishArtifact := false
 
 pomIncludeRepository := { _ => false }
 
@@ -58,9 +58,9 @@ releaseTagName := {
   s"${name.value.stripPrefix("blocking-").toUpperCase}-${version.value}"
 }
 
-scalacOptions in (Compile, doc) ++= Seq(
+Compile / doc / scalacOptions ++= Seq(
   "-sourcepath",
-  (baseDirectory in LocalRootProject).value.getAbsolutePath,
+  (LocalRootProject / baseDirectory).value.getAbsolutePath,
   "-doc-source-url",
   "https://github.com/gitbucket/blocking-slick/tree/" + releaseTagName.value + "€{FILE_PATH}.scala"
 )
