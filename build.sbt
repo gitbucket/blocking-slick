@@ -2,9 +2,9 @@ name := "blocking-slick-33"
 
 organization := "com.github.takezoe"
 
-scalaVersion := "2.12.8"
+scalaVersion := "2.12.15"
 
-crossScalaVersions := List("2.11.12", "2.12.8", "2.13.8")
+crossScalaVersions := List("2.11.12", "2.12.15", "2.13.8")
 
 libraryDependencies ++= Seq(
   "com.typesafe.slick" %% "slick"           % "3.3.2",
