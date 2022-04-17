@@ -1,4 +1,4 @@
-blocking-slick [![Scala CI](https://github.com/takezoe/blocking-slick/actions/workflows/scala.yml/badge.svg)](https://github.com/takezoe/blocking-slick/actions/workflows/scala.yml)
+blocking-slick [![Scala CI](https://github.com/gitbucket/blocking-slick/actions/workflows/scala.yml/badge.svg)](https://github.com/gitbucket/blocking-slick/actions/workflows/scala.yml)
 ==============
 
 Provides Slick2 compatible blocking API for Slick3.
@@ -111,4 +111,4 @@ Note that using `flatMap` and `andThen` requires an `ExecutionContext`, but if y
 Resources
 ----
 
-You can see actual codes in [the testcase](https://github.com/takezoe/blocking-slick/blob/master/src/test/scala/com/github/takezoe/slick/blocking/SlickBlockingAPISpec.scala), and also a blocking-slick with Play2 and play-slick example is available at [here](https://github.com/takezoe/blocking-slick-play2).
+You can see actual codes in [the testcase](https://github.com/gitbucket/blocking-slick/blob/master/src/test/scala/com/github/takezoe/slick/blocking/SlickBlockingAPISpec.scala), and also a blocking-slick with Play2 and play-slick example is available at [here](https://github.com/takezoe/blocking-slick-play2).
