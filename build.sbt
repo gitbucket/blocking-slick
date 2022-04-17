@@ -8,6 +8,9 @@ crossScalaVersions := List("2.11.12", "2.12.15", "2.13.8")
 
 libraryDependencies ++= Seq(
   "com.typesafe.slick" %% "slick" % "3.3.3",
+  "com.dimafeng" %% "testcontainers-scala" % "0.40.5" % "test",
+  "org.testcontainers" % "mysql" % "1.17.1" % "test",
+  "mysql" % "mysql-connector-java" % "8.0.28" % "test",
   "org.scalatest" %% "scalatest-funsuite" % "3.2.11" % "test",
   "com.h2database" % "h2" % "1.4.192" % "test",
   "ch.qos.logback" % "logback-classic" % "1.2.11" % "test"

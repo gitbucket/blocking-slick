@@ -1,28 +1,72 @@
 package com.github.takezoe.slick.blocking
 
+import com.dimafeng.testcontainers.Container
+import com.dimafeng.testcontainers.ForAllTestContainer
+import com.dimafeng.testcontainers.JdbcDatabaseContainer
+import com.dimafeng.testcontainers.MySQLContainer
 import org.scalatest.funsuite.AnyFunSuite
+import org.testcontainers.utility.DockerImageName
+import slick.jdbc.JdbcBackend
 import slick.jdbc.meta.MTable
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration.Duration
 
-class SlickBlockingAPISpec extends AnyFunSuite {
+class SlickBlockingAPISpecH2
+    extends SlickBlockingAPISpec(
+      BlockingH2Driver
+    ) {
+  protected override val db = Tables.profile.blockingApi.Database.forURL("jdbc:h2:mem:test;TRACE_LEVEL_FILE=4")
+}
 
+class SlickBlockingAPISpecMySQL56 extends SlickBlockingAPISpecMySQL("5.6")
+
+abstract class SlickBlockingAPISpecMySQL(mysqlVersion: String)
+    extends SlickBlockingAPISpecTestContainer(
+      MySQLContainer(mysqlImageVersion = DockerImageName.parse("mysql:" + mysqlVersion)),
+      BlockingMySQLDriver
+    )
+
+abstract class SlickBlockingAPISpecTestContainer(
+  override val container: JdbcDatabaseContainer with Container,
+  profile: BlockingJdbcProfile
+) extends SlickBlockingAPISpec(profile)
+    with ForAllTestContainer {
+
+  override lazy val db = Tables.profile.blockingApi.Database.forURL(
+    url = container.jdbcUrl,
+    user = container.username,
+    password = container.password,
+    driver = container.driverClassName
+  )
+
+}
+
+abstract class SlickBlockingAPISpec(p: BlockingJdbcProfile) extends AnyFunSuite { self =>
   object Tables
       extends {
-        val profile = BlockingH2Driver
+        override val profile: BlockingJdbcProfile = self.p
       }
       with models.Tables
-  import BlockingH2Driver.blockingApi._
+  import Tables.profile.blockingApi._
   import Tables._
 
-  private val db = Database.forURL("jdbc:h2:mem:test;TRACE_LEVEL_FILE=4")
+  protected val db: Tables.profile.api.Database
+
+  private final def testWithSession[A](f: JdbcBackend#Session => A): A = {
+    db.withSession { implicit session =>
+      try {
+        Tables.schema.create
+        f(session)
+      } finally {
+        Tables.schema.remove
+      }
+    }
+  }
 
   test("CRUD operation") {
-    db.withSession { implicit session =>
-      Tables.schema.create
-
+    testWithSession { implicit session =>
       // Insert
       Users.insert(UsersRow(1, "takezoe", None))
       Users.insert(UsersRow(2, "chibochibo", None))
@@ -51,15 +95,11 @@ class SlickBlockingAPISpec extends AnyFunSuite {
 
       val count2 = Query(Users.length).first
       assert(count2 == 2)
-
-      Tables.schema.remove
     }
   }
 
   test("Plain SQL") {
-    db.withSession { implicit session =>
-      Tables.schema.create
-
+    testWithSession { implicit session =>
       // plain sql
       val id1 = 1
       val name1 = "takezoe"
@@ -77,15 +117,11 @@ class SlickBlockingAPISpec extends AnyFunSuite {
 
       val count2 = query.first
       assert(count2 == 2)
-
-      Tables.schema.remove
     }
   }
 
   test("exists") {
-    db.withSession { implicit session =>
-      Tables.schema.create
-
+    testWithSession { implicit session =>
       val exists1 = Users.filter(_.id === 1L.bind).filter(_.name === "takezoe".bind).exists.run
       assert(exists1 == false)
 
@@ -94,32 +130,25 @@ class SlickBlockingAPISpec extends AnyFunSuite {
       val exists2 = Users.filter(_.id === 1L.bind).filter(_.name === "takezoe".bind).exists.run
       assert(exists2 == true)
 
-      Tables.schema.remove
     }
   }
 
   test("sum") {
-    db.withSession { implicit session =>
-      Tables.schema.create
-
+    testWithSession { implicit session =>
       val sum = Users.map(_.id).sum.run
       assert(sum == None)
 
-      Tables.schema.remove
     }
   }
 
   test("run") {
-    db.withSession { implicit session =>
-      Tables.schema.create
+    testWithSession { implicit session =>
       assert(Users.run.length == 0)
     }
   }
 
   test("insertAll") {
-    db.withSession { implicit session =>
-      Tables.schema.create
-
+    testWithSession { implicit session =>
       val users = List(
         UsersRow(1, "takezoe", None),
         UsersRow(2, "chibochibo", None),
@@ -137,9 +166,7 @@ class SlickBlockingAPISpec extends AnyFunSuite {
   }
 
   test("insert returning") {
-    db.withSession { implicit session =>
-      Tables.schema.create
-
+    testWithSession { implicit session =>
       val id = Users.returning(Users.map(_.id)) insert UsersRow(1, "takezoe", None)
       assert(id == 1)
       assert(Users.length.run == 1)
@@ -151,9 +178,7 @@ class SlickBlockingAPISpec extends AnyFunSuite {
   }
 
   test("insert multiple returning") {
-    db.withSession { implicit session =>
-      Tables.schema.create
-
+    testWithSession { implicit session =>
       val id = Users.returning(Users.map(_.id)) insertAll (UsersRow(1, "takezoe", None), UsersRow(2, "mrfyda", None))
       assert(id == List(1, 2))
       assert(Users.length.run == 2)
@@ -168,9 +193,7 @@ class SlickBlockingAPISpec extends AnyFunSuite {
   }
 
   test("insert insertOrUpdate") {
-    db.withSession { implicit session =>
-      Tables.schema.create
-
+    testWithSession { implicit session =>
       Users.insertOrUpdate(UsersRow(1, "takezoe", None))
       assert(Users.length.run == 1)
       Users.insertOrUpdate(UsersRow(1, "joao", None))
@@ -187,8 +210,8 @@ class SlickBlockingAPISpec extends AnyFunSuite {
 
   test("withTransaction Action") {
     withTransaction(
-      u => s => sqlu"insert into users values (${u.id}, ${u.name}, ${u.companyId})".execute(s),
-      id => s => sql"select exists (select * from users where id = $id)".as[Boolean].first(s)
+      u => s => sqlu"insert into USERS values (${u.id}, ${u.name}, ${u.companyId})".execute(s),
+      id => s => sql"select exists (select * from USERS where id = $id)".as[Boolean].first(s)
     )
   }
 
@@ -196,9 +219,7 @@ class SlickBlockingAPISpec extends AnyFunSuite {
     insertUser: UsersRow => Session => Int,
     existsUser: Long => Session => Boolean
   ) = {
-    db.withSession { implicit session =>
-      Tables.schema.create
-
+    testWithSession { implicit session =>
       { // rollback
         session.withTransaction {
           insertUser(UsersRow(1, "takezoe", None))(session)
@@ -250,10 +271,12 @@ class SlickBlockingAPISpec extends AnyFunSuite {
   }
 
   test("MTable support") {
-    db.withSession { implicit session =>
-      Tables.schema.create
-
-      assert(MTable.getTables.list.length == 2)
+    if (this.isInstanceOf[SlickBlockingAPISpecH2]) {
+      testWithSession { implicit session =>
+        assert(MTable.getTables.list.length == 2)
+      }
+    } else {
+      pending // TODO
     }
   }
 
@@ -271,61 +294,64 @@ class SlickBlockingAPISpec extends AnyFunSuite {
 
   private def testTransactionWithSelectForUpdate(selectForUpdate: Session => Seq[Long]) = {
     import scala.concurrent.ExecutionContext.Implicits.global
-    db.withSession { implicit session =>
-      Tables.schema.create
+    if (this.isInstanceOf[SlickBlockingAPISpecH2]) {
+      testWithSession { implicit session =>
+        // Insert
+        Users.insert(UsersRow(1, "takezoe", None))
 
-      // Insert
-      Users.insert(UsersRow(1, "takezoe", None))
-
-      // concurrently do a select for update
-      val f1 = Future {
-        db.withTransaction { implicit session =>
-          val l = selectForUpdate(session).length
-          // default h2 lock timeout is 1000ms
-          Thread.sleep(3000L)
-          l
+        // concurrently do a select for update
+        val f1 = Future {
+          db.withTransaction { implicit session =>
+            val l = selectForUpdate(session).length
+            // default h2 lock timeout is 1000ms
+            Thread.sleep(3000L)
+            l
+          }
         }
-      }
 
-      // and try to update a row
-      val f2 = Future {
-        db.withTransaction { implicit session =>
-          Thread.sleep(500L)
-          Users.filter(_.id === 1L).map(_.name).update("João")
+        // and try to update a row
+        val f2 = Future {
+          db.withTransaction { implicit session =>
+            Thread.sleep(500L)
+            Users.filter(_.id === 1L).map(_.name).update("João")
+          }
         }
-      }
 
-      assert(Await.result(f1, Duration.Inf) == 1)
-      assertThrows[Exception](Await.result(f2, Duration.Inf))
+        assert(Await.result(f1, Duration.Inf) == 1)
+        assertThrows[Exception](Await.result(f2, Duration.Inf))
+      }
+    } else {
+      pending // TODO
     }
   }
 
   test("compiled support") {
-    db.withSession { implicit session =>
-      Tables.schema.create
+    if (this.isInstanceOf[SlickBlockingAPISpecH2]) {
+      testWithSession { implicit session =>
+        val compiled = Compiled { (i: Rep[Long]) => Users.filter(_.id === i) }
+        assert(compiled(1L).run.length === 0)
 
-      val compiled = Compiled { (i: Rep[Long]) => Users.filter(_.id === i) }
-      assert(compiled(1L).run.length === 0)
+        // Insert
+        val insertCompiled = Users.insertInvoker
+        insertCompiled.insert(UsersRow(1, "takezoe", None))
+        assert(compiled(1L).run.length === 1)
 
-      // Insert
-      val insertCompiled = Users.insertInvoker
-      insertCompiled.insert(UsersRow(1, "takezoe", None))
-      assert(compiled(1L).run.length === 1)
+        // update
+        val compiledUpdate = Compiled { (n: Rep[String]) => Users.filter(_.name === n).map(_.name) }
+        compiledUpdate("takezoe").update("João")
 
-      // update
-      val compiledUpdate = Compiled { (n: Rep[String]) => Users.filter(_.name === n).map(_.name) }
-      compiledUpdate("takezoe").update("João")
+        // delete
+        compiledUpdate("João").delete
 
-      // delete
-      compiledUpdate("João").delete
-
-      assert(compiled(1L).run.length === 0)
+        assert(compiled(1L).run.length === 0)
+      }
+    } else {
+      pending // TODO
     }
   }
 
   test("Plain SQL chained together") {
-    db.withSession { implicit session =>
-      Tables.schema.create
+    testWithSession { implicit session =>
       implicit val ctx = ExecutionContext.global
 
       // plain sql
@@ -354,7 +380,6 @@ class SlickBlockingAPISpec extends AnyFunSuite {
       val count2 = query.run
       assert(count2 == (2, 3))
 
-      Tables.schema.remove
     }
   }
 }
