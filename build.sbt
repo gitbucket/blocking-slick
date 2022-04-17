@@ -7,7 +7,7 @@ scalaVersion := "2.12.15"
 crossScalaVersions := List("2.11.12", "2.12.15", "2.13.0")
 
 libraryDependencies ++= Seq(
-  "com.typesafe.slick" %% "slick"           % "3.3.2",
+  "com.typesafe.slick" %% "slick"           % "3.3.3",
   "org.scalatest"      %% "scalatest-funsuite" % "3.2.11" % "test",
   "com.h2database"      % "h2"              % "1.4.192" % "test",
   "ch.qos.logback"      % "logback-classic" % "1.2.3"   % "test"
