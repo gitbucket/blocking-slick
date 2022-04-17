@@ -58,7 +58,7 @@ releasePublishArtifactsAction := PgpKeys.publishSigned.value
 
 releaseTagName := {
   // tagName will be like "SLICK-32-0.0.X"
-  s"${name.value.stripPrefix("blocking-").toUpperCase}-${version.value}"
+  s"${name.value.stripPrefix("blocking-").toUpperCase(java.util.Locale.ROOT)}-${version.value}"
 }
 
 Compile / doc / scalacOptions ++= Seq(
