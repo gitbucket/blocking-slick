@@ -170,7 +170,10 @@ abstract class SlickBlockingAPISpec(p: BlockingJdbcProfile) extends AnyFunSuite 
       val id = Users.returning(Users.map(_.id)) insert UsersRow(1, "takezoe", None)
       assert(id == 1)
       assert(Users.length.run == 1)
-      val u = (Users.returning(Users.map(_.id)).into((u, id) => u.copy(id = id))) insert UsersRow(2, "takezoe", None)
+      val u = Users
+        .returning(Users.map(_.id))
+        .into(
+        (u, id) => u.copy(id = id)) insert UsersRow(2, "takezoe", None)
       assert(u.id == 2)
       assert(Users.length.run == 2)
     }
@@ -182,7 +185,10 @@ abstract class SlickBlockingAPISpec(p: BlockingJdbcProfile) extends AnyFunSuite 
       val id = Users.returning(Users.map(_.id)) insertAll (UsersRow(1, "takezoe", None), UsersRow(2, "mrfyda", None))
       assert(id == List(1, 2))
       assert(Users.length.run == 2)
-      val u = (Users.returning(Users.map(_.id)).into((u, id) => u.copy(id = id))) insertAll (UsersRow(
+      val u = Users
+        .returning(Users.map(_.id))
+        .into(
+        (u, id) => u.copy(id = id)) insertAll (UsersRow(
         3,
         "takezoe",
         None

@@ -32,7 +32,7 @@ Test / publishArtifact := false
 
 pomIncludeRepository := { _ => false }
 
-pomExtra := (
+pomExtra :=
   <url>https://github.com/gitbucket/blocking-slick</url>
     <licenses>
       <license>
@@ -50,7 +50,6 @@ pomExtra := (
         <name>Naoki Takezoe</name>
       </developer>
     </developers>
-)
 
 releaseCrossBuild := true
 
