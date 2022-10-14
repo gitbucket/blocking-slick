@@ -10,7 +10,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.slick" %% "slick" % "3.3.3" cross CrossVersion.for3Use2_13, // TODO
   "com.dimafeng" %% "testcontainers-scala" % "0.40.11" % "test",
   "org.testcontainers" % "mysql" % "1.17.5" % "test",
-  "mysql" % "mysql-connector-java" % "8.0.30" % "test",
+  "mysql" % "mysql-connector-java" % "8.0.31" % "test",
   "org.scalatest" %% "scalatest-funsuite" % "3.2.14" % "test",
   "com.h2database" % "h2" % "1.4.192" % "test",
   "ch.qos.logback" % "logback-classic" % "1.2.11" % "test"
