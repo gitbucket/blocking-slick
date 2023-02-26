@@ -7,7 +7,7 @@ scalaVersion := "2.12.17"
 crossScalaVersions := List("2.12.17", "2.13.10")
 
 libraryDependencies ++= Seq(
-  "com.typesafe.slick" %% "slick" % "3.3.3" cross CrossVersion.for3Use2_13, // TODO
+  "com.typesafe.slick" %% "slick" % "3.4.1" cross CrossVersion.for3Use2_13, // TODO
   "com.dimafeng" %% "testcontainers-scala" % "0.40.12" % "test",
   "org.testcontainers" % "mysql" % "1.17.6" % "test",
   "mysql" % "mysql-connector-java" % "8.0.32" % "test",
