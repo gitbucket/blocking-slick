@@ -4,7 +4,7 @@ organization := "com.github.takezoe"
 
 scalaVersion := "2.12.18"
 
-crossScalaVersions := List("2.12.18", "2.13.10", "3.3.0")
+crossScalaVersions := List("2.12.18", "2.13.11", "3.3.0")
 
 Test / sources := {
   if (scalaBinaryVersion.value == "3") {
