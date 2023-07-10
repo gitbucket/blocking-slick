@@ -16,7 +16,7 @@ Test / sources := {
 
 libraryDependencies += {
   if (scalaBinaryVersion.value == "3") {
-    "com.typesafe.slick" %% "slick" % "3.5.0-M3" cross CrossVersion.for3Use2_13, // TODO
+    "com.typesafe.slick" %% "slick" % "3.5.0-M4"
   } else {
     "com.typesafe.slick" %% "slick" % "3.4.1"
   }
