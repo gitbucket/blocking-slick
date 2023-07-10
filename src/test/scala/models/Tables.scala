@@ -19,21 +19,9 @@ trait Tables {
    *  @param name Database column NAME SqlType(VARCHAR) */
   case class CompaniesRow(id: Int, name: String)
 
-  /** GetResult implicit for fetching CompaniesRow objects using plain SQL queries */
-  implicit def GetResultCompaniesRow(implicit e0: GR[Int], e1: GR[String]): GR[CompaniesRow] = GR { prs =>
-    import prs._
-    CompaniesRow.tupled((<<[Int], <<[String]))
-  }
-
   /** Table description of table COMPANIES. Objects of this class serve as prototypes for rows in queries. */
   class Companies(_tableTag: Tag) extends Table[CompaniesRow](_tableTag, "COMPANIES") {
-    def * = (id, name) <> (CompaniesRow.tupled, CompaniesRow.unapply)
-
-    /** Maps whole row to an option. Useful for outer joins. */
-    def ? = (Rep.Some(id), Rep.Some(name)).shaped.<>(
-      { r => import r._; _1.map(_ => CompaniesRow.tupled((_1.get, _2.get))) },
-      (_: Any) => throw new Exception("Inserting into ? projection not supported.")
-    )
+    def * = (id, name).mapTo[CompaniesRow]
 
     /** Database column ID SqlType(INTEGER), PrimaryKey */
     val id: Rep[Int] = column[Int]("ID", O.PrimaryKey)
@@ -51,21 +39,9 @@ trait Tables {
    *  @param companyId Database column COMPANY_ID SqlType(INTEGER) */
   case class UsersRow(id: Long, name: String, companyId: Option[Int])
 
-  /** GetResult implicit for fetching UsersRow objects using plain SQL queries */
-  implicit def GetResultUsersRow(implicit e0: GR[Long], e1: GR[String], e2: GR[Option[Int]]): GR[UsersRow] = GR { prs =>
-    import prs._
-    UsersRow.tupled((<<[Long], <<[String], <<?[Int]))
-  }
-
   /** Table description of table USERS. Objects of this class serve as prototypes for rows in queries. */
   class Users(_tableTag: Tag) extends Table[UsersRow](_tableTag, "USERS") {
-    def * = (id, name, companyId) <> (UsersRow.tupled, UsersRow.unapply)
-
-    /** Maps whole row to an option. Useful for outer joins. */
-    def ? = (Rep.Some(id), Rep.Some(name), companyId).shaped.<>(
-      { r => import r._; _1.map(_ => UsersRow.tupled((_1.get, _2.get, _3))) },
-      (_: Any) => throw new Exception("Inserting into ? projection not supported.")
-    )
+    def * = (id, name, companyId).mapTo[UsersRow]
 
     /** Database column ID SqlType(BIGINT), AutoInc, PrimaryKey */
     val id: Rep[Long] = column[Long]("ID", O.AutoInc, O.PrimaryKey)
