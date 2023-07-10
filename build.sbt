@@ -2,17 +2,9 @@ name := "blocking-slick-33"
 
 organization := "com.github.takezoe"
 
-scalaVersion := "2.12.18"
+scalaVersion := "3.3.0"
 
 crossScalaVersions := List("2.12.18", "2.13.11", "3.3.0")
-
-Test / sources := {
-  if (scalaBinaryVersion.value == "3") {
-    Nil // TODO
-  } else {
-    (Test / sources).value
-  }
-}
 
 libraryDependencies += {
   if (scalaBinaryVersion.value == "3") {
@@ -40,6 +32,14 @@ publishTo := {
 }
 
 scalacOptions := Seq("-deprecation", "-feature")
+
+Test / scalacOptions ++= {
+  if (scalaBinaryVersion.value == "3") {
+    Seq("-source:3.0-migration")
+  } else {
+    Nil
+  }
+}
 
 Test / fork := true
 

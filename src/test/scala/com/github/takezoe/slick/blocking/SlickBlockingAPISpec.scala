@@ -44,21 +44,19 @@ abstract class SlickBlockingAPISpecTestContainer(
 }
 
 abstract class SlickBlockingAPISpec(p: BlockingJdbcProfile) extends AnyFunSuite { self =>
-  object Tables
-      extends {
-        override val profile: BlockingJdbcProfile = self.p
-      }
-      with models.Tables
+  object Tables extends models.Tables {
+    override val profile: BlockingJdbcProfile = self.p
+  }
   import Tables.profile.blockingApi._
   import Tables._
 
   protected val db: Tables.profile.api.Database
 
-  private final def testWithSession[A](f: JdbcBackend#Session => A): A = {
+  private final def testWithSession[A](f: Tables.profile.blockingApi.Session => A): A = {
     db.withSession { implicit session =>
       try {
         Tables.schema.create
-        f(session)
+        f(session.asInstanceOf[Session])
       } finally {
         Tables.schema.remove
       }
@@ -302,7 +300,7 @@ abstract class SlickBlockingAPISpec(p: BlockingJdbcProfile) extends AnyFunSuite 
         // concurrently do a select for update
         val f1 = Future {
           db.withTransaction { implicit session =>
-            val l = selectForUpdate(session).length
+            val l = selectForUpdate(session.asInstanceOf[Session]).length
             // default h2 lock timeout is 1000ms
             Thread.sleep(3000L)
             l
