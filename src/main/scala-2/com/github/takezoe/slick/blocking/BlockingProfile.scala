@@ -101,7 +101,7 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
         invoker.results(0).right.get.foreach(b)
       }
 
-      def foldLeft[R](z: R)(f: (R,U) => R)(implicit s: JdbcBackend#Session): R = {
+      def foldLeft[R](z: R)(f: (R, U) => R)(implicit s: JdbcBackend#Session): R = {
         val invoker = new QueryInvoker[U](tree, param)
         invoker.results(0).right.get.foldLeft(z)(f)
       }
@@ -145,10 +145,9 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
     implicit def mapInvoker[A, B, C[_]](q: Query[_, (A, B), C]): MapInvoker[A, B] =
       new MapInvoker[A, B](queryCompiler.run(q.toNode).tree, ())
     implicit def compiledMapInvoker[A, B, C[_]](
-                                                  c: RunnableCompiled[_ <: Query[_, _, C], C[(A, B)]]
-                                                ): MapInvoker[A, B] =
+      c: RunnableCompiled[_ <: Query[_, _, C], C[(A, B)]]
+    ): MapInvoker[A, B] =
       new MapInvoker[A, B](c.compiledQuery, c.param)
-
 
     class BlockingUpdateInvoker[U](tree: Node, param: Any) {
       def updateStatement = createUpdateActionExtensionMethods(tree, param).updateStatement
