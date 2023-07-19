@@ -94,6 +94,16 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
         val invoker = new QueryInvoker[U](tree, param)
         invoker.firstOption
       }
+
+      def foreach(b: U => Unit)(implicit s: JdbcBackend#Session): Unit = {
+        val invoker = new QueryInvoker[U](tree, param)
+        invoker.results(0).right.get.foreach(b)
+      }
+
+      def foldLeft[R](z: R)(f: (R, U) => R)(implicit s: JdbcBackend#Session): R = {
+        val invoker = new QueryInvoker[U](tree, param)
+        invoker.results(0).right.get.foldLeft(z)(f)
+      }
     }
     implicit def queryToQueryInvoker[U, C[_]](q: Query[_, U, C]): BlockingQueryInvoker[U] =
       new BlockingQueryInvoker[U](queryCompiler.run(q.toNode).tree, ())
@@ -119,6 +129,26 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
       c: RunnableCompiled[_ <: Query[_, _, C], C[U]]
     ): BlockingDeleteInvoker =
       new BlockingDeleteInvoker(c.compiledDelete, c.param)
+
+    class MapInvoker[A, B](tree: slick.ast.Node, param: Any) {
+      def selectStatement: String = {
+        val invoker = new QueryInvoker[(A, B)](tree, param)
+        invoker.selectStatement
+      }
+
+      def toMap(implicit s: JdbcBackend#Session): Map[A, B] = {
+        val invoker = new QueryInvoker[(A, B)](tree, param)
+        invoker.results(0).right.get.toMap
+      }
+    }
+
+    implicit def mapInvoker[A, B, C[_]](q: Query[_, (A, B), C]): MapInvoker[A, B] =
+      new MapInvoker[A, B](queryCompiler.run(q.toNode).tree, ())
+
+    implicit def compiledMapInvoker[A, B, C[_]](
+      c: RunnableCompiled[_ <: Query[_, _, C], C[(A, B)]]
+    ): MapInvoker[A, B] =
+      new MapInvoker[A, B](c.compiledQuery, c.param)
 
     class BlockingUpdateInvoker[U](tree: Node, param: Any) {
       def updateStatement = createUpdateActionExtensionMethods(tree, param).updateStatement
