@@ -10,7 +10,6 @@ import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcProfile
 import slick.lifted.RunnableCompiled
 import slick.relational.*
-
 import scala.language.existentials
 import scala.language.implicitConversions
 import scala.util._
