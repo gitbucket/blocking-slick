@@ -270,10 +270,10 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
     /**
      * Extends plain db queries
      */
-    implicit class RichDBIOAction[R](action: DBIOAction[R, NoStream, Effect]) {
+    implicit class RichDBIOAction[R, E <: Effect](action: DBIOAction[R, NoStream, E]) {
 
       def executeAction[T](
-        action: DBIOAction[T, NoStream, Effect],
+        action: DBIOAction[T, NoStream, E],
         ctx: backend.JdbcActionContext,
         streaming: Boolean,
         topLevel: Boolean
@@ -288,6 +288,16 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
             executeAction(action, ctx, streaming && pos == last, pos == 0)
           }
           results.last.asInstanceOf[T]
+        case SequenceAction(dbios) => dbios.map(dbio => executeAction(dbio, ctx, streaming, topLevel)).asInstanceOf[T]
+        case CleanUpAction(base, f, keepFailure, ec) =>
+          val t1 = Try(executeAction(base, ctx, streaming, topLevel))
+
+          val a2 = f(t1 match {
+            case Success(_) => None
+            case Failure(t) => Some(t)
+          })
+          val t2 = executeAction(a2, ctx, streaming, topLevel)
+          t1.get
       }
 
       def run(implicit s: JdbcBackend#Session): R = executeAction(action, new BlockingJdbcActionContext(s), false, true)

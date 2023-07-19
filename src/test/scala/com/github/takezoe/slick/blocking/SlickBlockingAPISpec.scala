@@ -380,4 +380,20 @@ abstract class SlickBlockingAPISpec(p: BlockingJdbcProfile) extends AnyFunSuite 
 
     }
   }
+
+  test("DBIO.sequence") {
+    testWithSession { implicit session =>
+      implicit val ctx = ExecutionContext.global
+
+      val users = (1 to 3).map(i => UsersRow(i, i.toString, None))
+
+      val dbios = users.map(u => Users.forceInsert(u))
+      val dbioSequence = DBIO.sequence(dbios)
+
+      dbioSequence.run
+
+      val count1 = Query(Users.length).first
+      assert(count1 == 3)
+    }
+  }
 }
