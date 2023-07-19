@@ -4,14 +4,16 @@ import java.sql.Connection
 import slick.ast.Node
 import slick.basic.BasicAction
 import slick.basic.BasicStreamingAction
-import slick.dbio._
+import slick.dbio.*
 import slick.jdbc.ActionBasedSQLInterpolation
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcProfile
 import slick.lifted.RunnableCompiled
-import slick.relational._
+import slick.relational.*
+
 import scala.language.existentials
 import scala.language.implicitConversions
+import scala.util._
 
 trait BlockingRelationalProfile extends RelationalProfile {
   trait BlockingAPI extends RelationalAPI {}
