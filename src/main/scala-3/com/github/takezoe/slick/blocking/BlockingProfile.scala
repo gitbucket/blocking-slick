@@ -4,14 +4,15 @@ import java.sql.Connection
 import slick.ast.Node
 import slick.basic.BasicAction
 import slick.basic.BasicStreamingAction
-import slick.dbio._
+import slick.dbio.*
 import slick.jdbc.ActionBasedSQLInterpolation
 import slick.jdbc.JdbcBackend
 import slick.jdbc.JdbcProfile
 import slick.lifted.RunnableCompiled
-import slick.relational._
+import slick.relational.*
 import scala.language.existentials
 import scala.language.implicitConversions
+import scala.util._
 
 trait BlockingRelationalProfile extends RelationalProfile {
   trait BlockingAPI extends RelationalAPI {}
@@ -270,10 +271,10 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
     /**
      * Extends plain db queries
      */
-    implicit class RichDBIOAction[R](action: DBIOAction[R, NoStream, Effect]) {
+    implicit class RichDBIOAction[R, E <: Effect](action: DBIOAction[R, NoStream, E]) {
 
       def executeAction[T](
-        action: DBIOAction[T, NoStream, Effect],
+        action: DBIOAction[T, NoStream, E],
         ctx: backend.JdbcActionContext,
         streaming: Boolean,
         topLevel: Boolean
@@ -288,6 +289,24 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
             executeAction(action, ctx, streaming && pos == last, pos == 0)
           }
           results.last.asInstanceOf[T]
+        case SequenceAction(dbios) => dbios.map(dbio => executeAction(dbio, ctx, streaming, topLevel)).asInstanceOf[T]
+        case CleanUpAction(base, f, keepFailure, ec) =>
+          val t1 = Try(executeAction(base, ctx, streaming, topLevel))
+
+          val a2 = f(t1 match {
+            case Success(_) => None
+            case Failure(t) => Some(t)
+          })
+          val t2 = Try(executeAction(a2, ctx, streaming, topLevel))
+
+          t2 match {
+            case Failure(e) if t1.isSuccess || !keepFailure => throw e
+            case _ =>
+              t1 match {
+                case Success(r) => r
+                case Failure(e) => throw e
+              }
+          }
       }
 
       def run(implicit s: JdbcBackend#Session): R = executeAction(action, new BlockingJdbcActionContext(s), false, true)
