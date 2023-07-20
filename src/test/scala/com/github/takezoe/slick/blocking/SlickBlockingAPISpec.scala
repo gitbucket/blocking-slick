@@ -396,4 +396,22 @@ abstract class SlickBlockingAPISpec(p: BlockingJdbcProfile) extends AnyFunSuite 
       assert(count1 == 3)
     }
   }
+
+  test("foreach, foldLeft, toMap") {
+    testWithSession { implicit session =>
+      Users.insert(UsersRow(1, "takezoe", None))
+      Users.insert(UsersRow(2, "chibochibo", None))
+      Users.insert(UsersRow(3, "tanacasino", None))
+
+      var forEachCounter = 0
+      Users.sortBy(_.id).foreach(u => forEachCounter += 1)
+      assert(forEachCounter == 3)
+
+      val uMap = Users.map(u => (u.id, u.name)).toMap
+      assert(uMap.size == 3)
+
+      val sumIds = Users.sortBy(_.id).foldLeft(0L)((acc, u) => acc + u.id)
+      assert(sumIds == 1 + 2 + 3)
+    }
+  }
 }
