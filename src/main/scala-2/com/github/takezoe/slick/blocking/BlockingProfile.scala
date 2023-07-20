@@ -298,8 +298,16 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
             case Success(_) => None
             case Failure(t) => Some(t)
           })
-          val t2 = executeAction(a2, ctx, streaming, topLevel)
-          t1.get
+          val t2 = Try(executeAction(a2, ctx, streaming, topLevel))
+
+          t2 match {
+            case Failure(e) if t1.isSuccess || !keepFailure => throw e
+            case _ =>
+              t1 match {
+                case Success(r) => r
+                case Failure(e) => throw e
+              }
+          }
       }
 
       def run(implicit s: JdbcBackend#Session): R = executeAction(action, new BlockingJdbcActionContext(s), false, true)
