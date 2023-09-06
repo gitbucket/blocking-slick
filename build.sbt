@@ -4,7 +4,7 @@ organization := "com.github.takezoe"
 
 scalaVersion := "3.3.1"
 
-crossScalaVersions := List("2.12.18", "2.13.11", "3.3.1")
+crossScalaVersions := List("2.12.18", "2.13.12", "3.3.1")
 
 libraryDependencies += {
   if (scalaBinaryVersion.value == "3") {
