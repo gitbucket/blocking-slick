@@ -8,7 +8,7 @@ crossScalaVersions := List("2.12.18", "2.13.12", "3.3.1")
 
 libraryDependencies += {
   if (scalaBinaryVersion.value == "3") {
-    "com.typesafe.slick" %% "slick" % "3.5.0-M4"
+    "com.typesafe.slick" %% "slick" % "3.5.0-M5"
   } else {
     "com.typesafe.slick" %% "slick" % "3.4.1"
   }
