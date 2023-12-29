@@ -12,7 +12,7 @@ import slick.lifted.RunnableCompiled
 import slick.relational.*
 import scala.language.existentials
 import scala.language.implicitConversions
-import scala.util._
+import scala.util.*
 
 trait BlockingRelationalProfile extends RelationalProfile {
   trait BlockingAPI extends RelationalAPI {}
@@ -54,14 +54,14 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
       def run(implicit s: JdbcBackend#Session): E = invoker.first
       def selectStatement: String = invoker.selectStatement
     }
-    implicit class QueryExecutor[U, C[_]](q: Query[_, U, C]) {
+    implicit class QueryExecutor[U, C[_]](q: Query[?, U, C]) {
       private val invoker = new QueryInvoker[U](queryCompiler.run(q.toNode).tree, ())
 
       def run(implicit s: JdbcBackend#Session): Seq[U] = invoker.results(0).right.get.toSeq
       def selectStatement: String = invoker.selectStatement
     }
 
-    implicit class RunnableCompiledQueryExecutor[U, C[_]](c: RunnableCompiled[_ <: Query[_, _, C], C[U]]) {
+    implicit class RunnableCompiledQueryExecutor[U, C[_]](c: RunnableCompiled[? <: Query[_, _, C], C[U]]) {
       private val invoker = new QueryInvoker[U](c.compiledQuery, c.param)
 
       def run(implicit s: JdbcBackend#Session): Seq[U] = invoker.invoker.results(0).right.get.toSeq
@@ -105,10 +105,10 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
         invoker.results(0).right.get.foldLeft(z)(f)
       }
     }
-    implicit def queryToQueryInvoker[U, C[_]](q: Query[_, U, C]): BlockingQueryInvoker[U] =
+    implicit def queryToQueryInvoker[U, C[_]](q: Query[?, U, C]): BlockingQueryInvoker[U] =
       new BlockingQueryInvoker[U](queryCompiler.run(q.toNode).tree, ())
     implicit def compiledToQueryInvoker[U, C[_]](
-      c: RunnableCompiled[_ <: Query[_, _, C], C[U]]
+      c: RunnableCompiled[? <: Query[_, _, C], C[U]]
     ): BlockingQueryInvoker[U] =
       new BlockingQueryInvoker[U](c.compiledQuery, c.param)
 
@@ -123,10 +123,10 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
 
       def deleteInvoker: this.type = this
     }
-    implicit def queryToDeleteInvoker[U, C[_]](q: Query[_, U, C]): BlockingDeleteInvoker =
+    implicit def queryToDeleteInvoker[U, C[_]](q: Query[?, U, C]): BlockingDeleteInvoker =
       new BlockingDeleteInvoker(deleteCompiler.run(q.toNode).tree, ())
     implicit def compiledToDeleteInvoker[U, C[_]](
-      c: RunnableCompiled[_ <: Query[_, _, C], C[U]]
+      c: RunnableCompiled[? <: Query[_, _, C], C[U]]
     ): BlockingDeleteInvoker =
       new BlockingDeleteInvoker(c.compiledDelete, c.param)
 
@@ -142,11 +142,11 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
       }
     }
 
-    implicit def mapInvoker[A, B, C[_]](q: Query[_, (A, B), C]): MapInvoker[A, B] =
+    implicit def mapInvoker[A, B, C[_]](q: Query[?, (A, B), C]): MapInvoker[A, B] =
       new MapInvoker[A, B](queryCompiler.run(q.toNode).tree, ())
 
     implicit def compiledMapInvoker[A, B, C[_]](
-      c: RunnableCompiled[_ <: Query[_, _, C], C[(A, B)]]
+      c: RunnableCompiled[? <: Query[_, _, C], C[(A, B)]]
     ): MapInvoker[A, B] =
       new MapInvoker[A, B](c.compiledQuery, c.param)
 
@@ -162,10 +162,10 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
 
       def updateInvoker: this.type = this
     }
-    implicit def queryToUpdateInvoker[U, C[_]](q: Query[_, U, C]): BlockingUpdateInvoker[U] =
+    implicit def queryToUpdateInvoker[U, C[_]](q: Query[?, U, C]): BlockingUpdateInvoker[U] =
       new BlockingUpdateInvoker[U](updateCompiler.run(q.toNode).tree, ())
     implicit def compiledToUpdateInvoker[U, C[_]](
-      c: RunnableCompiled[_ <: Query[_, _, C], C[U]]
+      c: RunnableCompiled[? <: Query[_, _, C], C[U]]
     ): BlockingUpdateInvoker[U] =
       new BlockingUpdateInvoker[U](c.compiledUpdate, c.param)
 
@@ -180,7 +180,7 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
           .run(new BlockingJdbcActionContext(s))
       }
 
-      def ++=(values: Iterable[U])(implicit s: JdbcBackend#Session): Int = insertAll(values.toSeq: _*)
+      def ++=(values: Iterable[U])(implicit s: JdbcBackend#Session): Int = insertAll(values.toSeq*)
 
       def insertAll(values: U*)(implicit s: JdbcBackend#Session): Int = {
         createInsertActionExtensionMethods(compiled)
@@ -199,10 +199,10 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
 
       def insertInvoker: this.type = this
     }
-    implicit def queryToInsertInvoker[U, C[_]](q: Query[_, U, C]): BlockingInsertInvoker[U] =
+    implicit def queryToInsertInvoker[U, C[_]](q: Query[?, U, C]): BlockingInsertInvoker[U] =
       new BlockingInsertInvoker[U](compileInsert(q.toNode))
     implicit def compiledToInsertInvoker[U, C[_]](
-      c: RunnableCompiled[_ <: Query[_, _, C], C[U]]
+      c: RunnableCompiled[? <: Query[_, _, C], C[U]]
     ): BlockingInsertInvoker[U] =
       new BlockingInsertInvoker[U](c.compiledInsert.asInstanceOf[CompiledInsert])
 
@@ -212,17 +212,17 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
 
       def insert(value: T)(implicit s: JdbcBackend#Session): R = {
         (a += value) match {
-          case a: SynchronousDatabaseAction[R, _, BlockingJdbcActionContext, ?, _] @unchecked => {
+          case a: SynchronousDatabaseAction[R, ?, BlockingJdbcActionContext, ?, ?] @unchecked => {
             a.run(new BlockingJdbcActionContext(s))
           }
         }
       }
 
-      def ++=(values: Iterable[T])(implicit s: JdbcBackend#Session): Seq[R] = insertAll(values.toSeq: _*)
+      def ++=(values: Iterable[T])(implicit s: JdbcBackend#Session): Seq[R] = insertAll(values.toSeq*)
 
       def insertAll(values: T*)(implicit s: JdbcBackend#Session): Seq[R] = {
         (a ++= values) match {
-          case a: SynchronousDatabaseAction[Seq[R], _, BlockingJdbcActionContext, ?, _] @unchecked => {
+          case a: SynchronousDatabaseAction[Seq[R], ?, BlockingJdbcActionContext, ?, ?] @unchecked => {
             a.run(new BlockingJdbcActionContext(s))
           }
         }
@@ -235,17 +235,17 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
 
       def insert(value: T)(implicit s: JdbcBackend#Session): R = {
         (a += value) match {
-          case a: SynchronousDatabaseAction[R, _, BlockingJdbcActionContext, ?, _] @unchecked => {
+          case a: SynchronousDatabaseAction[R, ?, BlockingJdbcActionContext, ?, ?] @unchecked => {
             a.run(new BlockingJdbcActionContext(s))
           }
         }
       }
 
-      def ++=(values: Iterable[T])(implicit s: JdbcBackend#Session): Seq[R] = insertAll(values.toSeq: _*)
+      def ++=(values: Iterable[T])(implicit s: JdbcBackend#Session): Seq[R] = insertAll(values.toSeq*)
 
       def insertAll(values: T*)(implicit s: JdbcBackend#Session): Seq[R] = {
         (a ++= values) match {
-          case a: SynchronousDatabaseAction[Seq[R], _, BlockingJdbcActionContext, ?, _] @unchecked => {
+          case a: SynchronousDatabaseAction[Seq[R], ?, BlockingJdbcActionContext, ?, ?] @unchecked => {
             a.run(new BlockingJdbcActionContext(s))
           }
         }
@@ -309,7 +309,7 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
         streaming: Boolean,
         topLevel: Boolean
       ): T = action match {
-        case a: SynchronousDatabaseAction[_, _, backend.JdbcActionContext, _, Effect] => a.run(ctx).asInstanceOf[T]
+        case a: SynchronousDatabaseAction[?, ?, backend.JdbcActionContext, ?, Effect] => a.run(ctx).asInstanceOf[T]
         case FlatMapAction(base, f, ec) =>
           val result = executeAction(base, ctx, false, topLevel)
           executeAction(f(result), ctx, streaming, false)
