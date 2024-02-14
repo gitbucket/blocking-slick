@@ -2,9 +2,9 @@ name := "blocking-slick"
 
 organization := "com.github.takezoe"
 
-scalaVersion := "3.3.1"
+scalaVersion := "3.3.2"
 
-crossScalaVersions := List("2.12.18", "2.13.12", "3.3.1")
+crossScalaVersions := List("2.12.18", "2.13.12", "3.3.2")
 
 libraryDependencies += {
   if (scalaBinaryVersion.value == "3") {
