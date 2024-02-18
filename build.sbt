@@ -15,7 +15,7 @@ libraryDependencies += {
 }
 
 libraryDependencies ++= Seq(
-  "com.dimafeng" %% "testcontainers-scala" % "0.41.2" % "test",
+  "com.dimafeng" %% "testcontainers-scala" % "0.41.3" % "test",
   "org.testcontainers" % "mysql" % "1.19.5" % "test",
   "com.mysql" % "mysql-connector-j" % "8.3.0" % "test",
   "org.scalatest" %% "scalatest-funsuite" % "3.2.18" % "test",
