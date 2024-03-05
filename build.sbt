@@ -19,7 +19,7 @@ libraryDependencies ++= Seq(
   "org.testcontainers" % "mysql" % "1.19.7" % "test",
   "com.mysql" % "mysql-connector-j" % "8.3.0" % "test",
   "org.scalatest" %% "scalatest-funsuite" % "3.2.18" % "test",
-  "com.h2database" % "h2" % "1.4.192" % "test",
+  "com.h2database" % "h2" % "1.4.200" % "test",
   "ch.qos.logback" % "logback-classic" % "1.5.3" % "test"
 )
 
