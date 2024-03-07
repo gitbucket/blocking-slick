@@ -10,7 +10,7 @@ libraryDependencies += {
   if (scalaBinaryVersion.value == "3") {
     "com.typesafe.slick" %% "slick" % "3.5.0-RC1"
   } else {
-    "com.typesafe.slick" %% "slick" % "3.4.1"
+    "com.typesafe.slick" %% "slick" % "3.5.0"
   }
 }
 
