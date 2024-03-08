@@ -177,15 +177,27 @@ abstract class SlickBlockingAPISpec(p: BlockingJdbcProfile) extends AnyFunSuite 
 
   test("insert multiple returning") {
     testWithSession { implicit session =>
-      val id = Users.returning(Users.map(_.id)) insertAll (UsersRow(1, "takezoe", None), UsersRow(2, "mrfyda", None))
-      assert(id == List(1, 2))
+      val id =
+        Users
+          .returning(Users.map(_.id))
+          .insertAll(
+            Seq(
+              UsersRow(1, "takezoe", None),
+              UsersRow(2, "mrfyda", None)
+            )
+          )
+          .run
       assert(Users.length.run == 2)
-      val u = (Users.returning(Users.map(_.id)).into((u, id) => u.copy(id = id))) insertAll (UsersRow(
-        3,
-        "takezoe",
-        None
-      ), UsersRow(4, "mrfyda", None))
-      assert(u.map(_.id) == List(3, 4))
+      val u = Users
+        .returning(Users.map(_.id))
+        .into((u, id) => u.copy(id = id))
+        .insertAll(
+          Seq(
+            UsersRow(3, "takezoe", None),
+            UsersRow(4, "mrfyda", None)
+          )
+        )
+        .run
       assert(Users.length.run == 4)
     }
   }

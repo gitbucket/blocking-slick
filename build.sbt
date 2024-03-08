@@ -6,15 +6,8 @@ scalaVersion := "3.3.3"
 
 crossScalaVersions := List("2.12.19", "2.13.13", "3.3.3")
 
-libraryDependencies += {
-  if (scalaBinaryVersion.value == "3") {
-    "com.typesafe.slick" %% "slick" % "3.5.0-RC1"
-  } else {
-    "com.typesafe.slick" %% "slick" % "3.4.1"
-  }
-}
-
 libraryDependencies ++= Seq(
+  "com.typesafe.slick" %% "slick" % "3.5.0",
   "com.dimafeng" %% "testcontainers-scala" % "0.41.3" % "test",
   "org.testcontainers" % "mysql" % "1.19.7" % "test",
   "com.mysql" % "mysql-connector-j" % "8.3.0" % "test",
@@ -32,6 +25,14 @@ publishTo := {
 }
 
 scalacOptions := Seq("-deprecation", "-feature")
+
+scalacOptions ++= {
+  if (scalaBinaryVersion.value != "3") {
+    Seq("-Xsource:3")
+  } else {
+    Nil
+  }
+}
 
 Test / scalacOptions ++= {
   if (scalaBinaryVersion.value == "3") {
