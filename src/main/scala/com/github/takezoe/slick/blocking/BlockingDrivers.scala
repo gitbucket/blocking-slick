@@ -10,3 +10,7 @@ object BlockingPostgresDriver extends PostgresProfile with BlockingJdbcProfile
 object BlockingSQLiteDriver extends SQLiteProfile with BlockingJdbcProfile
 object BlockingDB2Driver extends DB2Profile with BlockingJdbcProfile
 object BlockingSQLServerDriver extends SQLServerProfile with BlockingJdbcProfile
+object BlockingOracleDriver
+    extends OracleProfile
+    with JdbcActionComponent.OneRowPerStatementOnly
+    with BlockingJdbcProfile
