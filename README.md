@@ -10,7 +10,7 @@ Add following dependency to your `build.sbt`:
 
 ```scala
 // for Slick 3.5 (Scala 2 / Scala 3)
-libraryDependencies += "com.github.takezoe" %% "blocking-slick" % "0.0.15-RC1"
+libraryDependencies += "com.github.takezoe" %% "blocking-slick" % "0.0.15-RC2"
 
 // for Slick 3.4 (Scala 2)
 libraryDependencies += "com.github.takezoe" %% "blocking-slick" % "0.0.14"
