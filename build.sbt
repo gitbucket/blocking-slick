@@ -37,14 +37,6 @@ scalacOptions ++= {
   }
 }
 
-Test / scalacOptions ++= {
-  if (scalaBinaryVersion.value == "3") {
-    Seq("-source:3.0-migration")
-  } else {
-    Nil
-  }
-}
-
 Test / fork := true
 
 Test / publishArtifact := false

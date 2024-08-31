@@ -17,7 +17,7 @@ class SlickBlockingAPISpecH2
     extends SlickBlockingAPISpec(
       BlockingH2Driver
     ) {
-  protected override val db = Tables.profile.blockingApi.Database.forURL("jdbc:h2:mem:test;TRACE_LEVEL_FILE=4")
+  protected override lazy val db = Tables.profile.blockingApi.Database.forURL("jdbc:h2:mem:test;TRACE_LEVEL_FILE=4")
 }
 
 class SlickBlockingAPISpecMySQL56 extends SlickBlockingAPISpecMySQL("5.6")
@@ -50,7 +50,7 @@ abstract class SlickBlockingAPISpec(p: BlockingJdbcProfile) extends AnyFunSuite 
   import Tables.profile.blockingApi._
   import Tables._
 
-  protected val db: Tables.profile.api.Database
+  protected def db: Tables.profile.api.Database
 
   private final def testWithSession[A](f: Tables.profile.blockingApi.Session => A): A = {
     db.withSession { implicit session =>
