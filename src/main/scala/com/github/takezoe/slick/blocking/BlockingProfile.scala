@@ -180,7 +180,7 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
           .run(new BlockingJdbcActionContext(s))
       }
 
-      def ++=(values: Iterable[U])(implicit s: JdbcBackend#Session): Int = insertAll(values.toSeq *)
+      def ++=(values: Iterable[U])(implicit s: JdbcBackend#Session): Int = insertAll(values.toSeq*)
 
       def insertAll(values: U*)(implicit s: JdbcBackend#Session): Int = {
         createInsertActionExtensionMethods(compiled)
@@ -218,7 +218,7 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
         }
       }
 
-      def ++=(values: Iterable[T])(implicit s: JdbcBackend#Session): Seq[R] = insertAll(values.toSeq *)
+      def ++=(values: Iterable[T])(implicit s: JdbcBackend#Session): Seq[R] = insertAll(values.toSeq*)
 
       def insertAll(values: T*)(implicit s: JdbcBackend#Session): Seq[R] = {
         (a ++= values) match {
@@ -241,7 +241,7 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
         }
       }
 
-      def ++=(values: Iterable[T])(implicit s: JdbcBackend#Session): Seq[R] = insertAll(values.toSeq *)
+      def ++=(values: Iterable[T])(implicit s: JdbcBackend#Session): Seq[R] = insertAll(values.toSeq*)
 
       def insertAll(values: T*)(implicit s: JdbcBackend#Session): Seq[R] = {
         (a ++= values) match {

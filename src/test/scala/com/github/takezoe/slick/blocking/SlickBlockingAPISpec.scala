@@ -153,7 +153,7 @@ abstract class SlickBlockingAPISpec(p: BlockingJdbcProfile) extends AnyFunSuite 
         UsersRow(3, "tanacasino", None)
       )
 
-      Users.insertAll(users: _*)
+      Users.insertAll(users*)
       val count1 = Query(Users.length).first
       assert(count1 == 3)
 
