@@ -29,7 +29,7 @@ abstract class SlickBlockingAPISpecMySQL(mysqlVersion: String)
     )
 
 abstract class SlickBlockingAPISpecTestContainer(
-  override val container: JdbcDatabaseContainer with Container,
+  override val container: JdbcDatabaseContainer & Container,
   profile: BlockingJdbcProfile
 ) extends SlickBlockingAPISpec(profile)
     with ForAllTestContainer {
