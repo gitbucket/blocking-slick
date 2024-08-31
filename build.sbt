@@ -27,10 +27,13 @@ publishTo := {
 scalacOptions := Seq("-deprecation", "-feature")
 
 scalacOptions ++= {
-  if (scalaBinaryVersion.value != "3") {
-    Seq("-Xsource:3")
-  } else {
-    Nil
+  scalaBinaryVersion.value match {
+    case "2.12" =>
+      Seq("-Xsource:3")
+    case "2.13" =>
+      Seq("-Xsource:3-cross")
+    case _ =>
+      Nil
   }
 }
 
