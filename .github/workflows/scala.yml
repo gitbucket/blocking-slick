@@ -7,7 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [8, 21]
+        java: [8, 25]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -16,7 +16,7 @@ jobs:
       uses: actions/setup-java@v5
       with:
         java-version: ${{matrix.java}}
-        distribution: 'adopt'
+        distribution: 'zulu'
     - uses: sbt/setup-sbt@v1
     - name: Run tests
       run: sbt scalafmtSbtCheck "+ scalafmtCheckAll" +test
