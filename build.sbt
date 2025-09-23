@@ -29,7 +29,7 @@ scalacOptions := Seq("-deprecation", "-feature")
 scalacOptions ++= {
   scalaBinaryVersion.value match {
     case "2.12" =>
-      Seq("-Xsource:3")
+      Seq("-Xsource:3", "-language:higherKinds")
     case "2.13" =>
       Seq("-Xsource:3-cross")
     case _ =>
