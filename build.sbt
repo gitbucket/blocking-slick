@@ -4,7 +4,7 @@ organization := "com.github.takezoe"
 
 scalaVersion := "3.3.6"
 
-crossScalaVersions := List("2.12.20", "2.13.16", "3.3.6")
+crossScalaVersions := List("2.12.20", "2.13.17", "3.3.6")
 
 libraryDependencies ++= Seq(
   "com.typesafe.slick" %% "slick" % "3.6.1",
