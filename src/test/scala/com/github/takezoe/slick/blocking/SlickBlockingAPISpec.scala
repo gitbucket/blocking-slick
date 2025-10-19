@@ -1,12 +1,10 @@
 package com.github.takezoe.slick.blocking
 
-import com.dimafeng.testcontainers.Container
-import com.dimafeng.testcontainers.ForAllTestContainer
-import com.dimafeng.testcontainers.JdbcDatabaseContainer
-import com.dimafeng.testcontainers.MySQLContainer
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.funsuite.AnyFunSuite
+import org.testcontainers.containers.JdbcDatabaseContainer
+import org.testcontainers.mysql.MySQLContainer
 import org.testcontainers.utility.DockerImageName
-import slick.jdbc.JdbcBackend
 import slick.jdbc.meta.MTable
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
@@ -24,21 +22,31 @@ class SlickBlockingAPISpecMySQL56 extends SlickBlockingAPISpecMySQL("5.6")
 
 abstract class SlickBlockingAPISpecMySQL(mysqlVersion: String)
     extends SlickBlockingAPISpecTestContainer(
-      MySQLContainer(mysqlImageVersion = DockerImageName.parse("mysql:" + mysqlVersion)),
+      new MySQLContainer(DockerImageName.parse("mysql:" + mysqlVersion)),
       BlockingMySQLDriver
     )
 
 abstract class SlickBlockingAPISpecTestContainer(
-  override val container: JdbcDatabaseContainer & Container,
+  container: JdbcDatabaseContainer[?],
   profile: BlockingJdbcProfile
 ) extends SlickBlockingAPISpec(profile)
-    with ForAllTestContainer {
+    with BeforeAndAfterAll {
 
-  override lazy val db = Tables.profile.blockingApi.Database.forURL(
-    url = container.jdbcUrl,
-    user = container.username,
-    password = container.password,
-    driver = container.driverClassName
+  override def beforeAll(): Unit = {
+    super.beforeAll()
+    container.start()
+  }
+
+  override def afterAll(): Unit = {
+    super.afterAll()
+    container.stop()
+  }
+
+  lazy val db = Tables.profile.blockingApi.Database.forURL(
+    url = container.getJdbcUrl,
+    user = container.getUsername,
+    password = container.getPassword,
+    driver = container.getDriverClassName
   )
 
 }
