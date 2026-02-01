@@ -221,15 +221,15 @@ abstract class SlickBlockingAPISpec(p: BlockingJdbcProfile) extends AnyFunSuite 
 
   test("withTransaction Query") {
     withTransaction(
-      u => s => Users.insert(u)(s),
-      id => s => Users.filter(_.id === id.bind).exists.run(s)
+      u => s => Users.insert(u)(using s),
+      id => s => Users.filter(_.id === id.bind).exists.run(using s)
     )
   }
 
   test("withTransaction Action") {
     withTransaction(
-      u => s => sqlu"insert into USERS values (${u.id}, ${u.name}, ${u.companyId})".execute(s),
-      id => s => sql"select exists (select * from USERS where id = $id)".as[Boolean].first(s)
+      u => s => sqlu"insert into USERS values (${u.id}, ${u.name}, ${u.companyId})".execute(using s),
+      id => s => sql"select exists (select * from USERS where id = $id)".as[Boolean].first(using s)
     )
   }
 
