@@ -49,7 +49,8 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
     }
 
     implicit class RepQueryExecutor[E](rep: Rep[E]) {
-      private val invoker = new QueryInvoker[E](queryCompiler.run(Query(rep)(slick.lifted.RepShape).toNode).tree, ())
+      private val invoker =
+        new QueryInvoker[E](queryCompiler.run(Query(rep)(using slick.lifted.RepShape).toNode).tree, ())
 
       def run(implicit s: JdbcBackend#Session): E = invoker.first
       def selectStatement: String = invoker.selectStatement
