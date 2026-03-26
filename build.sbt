@@ -10,7 +10,7 @@ libraryDependencies ++= Seq(
   "com.typesafe.slick" %% "slick" % "3.6.1",
   "org.testcontainers" % "testcontainers-mysql" % "2.0.4" % "test",
   "com.mysql" % "mysql-connector-j" % "9.6.0" % "test",
-  "org.scalatest" %% "scalatest-funsuite" % "3.2.19" % "test",
+  "org.scalatest" %% "scalatest-funsuite" % "3.2.20" % "test",
   "com.h2database" % "h2" % "1.4.192" % "test",
   "ch.qos.logback" % "logback-classic" % "1.5.32" % "test"
 )
