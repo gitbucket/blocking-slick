@@ -81,6 +81,12 @@ trait BlockingJdbcProfile extends JdbcProfile with BlockingRelationalProfile {
         val invoker = new QueryInvoker[U](tree, param)
         invoker.selectStatement
       }
+
+      def iterator(implicit s: JdbcBackend#Session): Iterator[U] = {
+        val invoker = new QueryInvoker[U](tree, param)
+        invoker.results(0).right.get
+      }
+
       def list(implicit s: JdbcBackend#Session): List[U] = {
         val invoker = new QueryInvoker[U](tree, param)
         invoker.results(0).right.get.toList
