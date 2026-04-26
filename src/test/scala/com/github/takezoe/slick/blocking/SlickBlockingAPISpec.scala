@@ -87,6 +87,12 @@ abstract class SlickBlockingAPISpec(p: BlockingJdbcProfile) extends AnyFunSuite 
       assert(result1(1) == UsersRow(2, "chibochibo", None))
       assert(result1(2) == UsersRow(3, "tanacasino", None))
 
+      val resultIterator = Users.sortBy(_.id).iterator.toSeq
+      assert(resultIterator.length == 3)
+      assert(resultIterator(0) == UsersRow(1, "takezoe", None))
+      assert(resultIterator(1) == UsersRow(2, "chibochibo", None))
+      assert(resultIterator(2) == UsersRow(3, "tanacasino", None))
+
       // Update
       Users.filter(_.id === 1L.bind).map(_.name).update("naoki")
 
