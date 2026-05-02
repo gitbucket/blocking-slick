@@ -71,9 +71,20 @@ releaseTagName := {
   s"${name.value.stripPrefix("blocking-").toUpperCase(java.util.Locale.ROOT)}-${version.value}"
 }
 
-Compile / doc / scalacOptions ++= Seq(
-  "-sourcepath",
-  (LocalRootProject / baseDirectory).value.getAbsolutePath,
-  "-doc-source-url",
-  "https://github.com/gitbucket/blocking-slick/tree/" + releaseTagName.value + "€{FILE_PATH}.scala"
-)
+Compile / doc / scalacOptions ++= {
+  scalaBinaryVersion.value match {
+    case "3" =>
+      Seq(
+        "-source-links:github://gitbucket/blocking-slick",
+        "-revision",
+        releaseTagName.value
+      )
+    case _ =>
+      Seq(
+        "-sourcepath",
+        (LocalRootProject / baseDirectory).value.getAbsolutePath,
+        "-doc-source-url",
+        "https://github.com/gitbucket/blocking-slick/tree/" + releaseTagName.value + "€{FILE_PATH}.scala"
+      )
+  }
+}
