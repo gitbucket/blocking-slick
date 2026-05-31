@@ -1,4 +1,4 @@
-blocking-slick [![Scala CI](https://github.com/gitbucket/blocking-slick/actions/workflows/scala.yml/badge.svg)](https://github.com/gitbucket/blocking-slick/actions/workflows/scala.yml)
+blocking-slick [![Scala CI](https://github.com/gitbucket/blocking-slick/actions/workflows/scala.yml/badge.svg)](https://github.com/gitbucket/blocking-slick/actions/workflows/scala.yml) [![blocking-slick Scala version support](https://index.scala-lang.org/gitbucket/blocking-slick/blocking-slick/latest-by-scala-version.svg?platform=jvm)](https://index.scala-lang.org/gitbucket/blocking-slick/blocking-slick) [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://github.com/gitbucket/solidbase/blob/master/LICENSE)
 ==============
 
 Provides Slick2 compatible blocking API for Slick3.
