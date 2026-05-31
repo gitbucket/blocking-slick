@@ -17,6 +17,7 @@ jobs:
       with:
         java-version: ${{matrix.java}}
         distribution: 'zulu'
-    - uses: sbt/setup-sbt@v1
+    - name: Make sbt wrapper executable
+      run: chmod +x ./sbt        
     - name: Run tests
-      run: sbt scalafmtSbtCheck "+ scalafmtCheckAll" +test
+      run: ./sbt scalafmtSbtCheck "+ scalafmtCheckAll" +test
