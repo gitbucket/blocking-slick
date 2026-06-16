@@ -71,7 +71,7 @@ releaseTagName := {
   s"${name.value.stripPrefix("blocking-").toUpperCase(java.util.Locale.ROOT)}-${version.value}"
 }
 
-Compile / doc / scalacOptions ++= {
+Compile / doc / scalacOptions ++= Def.uncached {
   scalaBinaryVersion.value match {
     case "3" =>
       Seq(
