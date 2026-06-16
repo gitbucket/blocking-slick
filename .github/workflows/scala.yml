@@ -7,7 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [8, 25]
+        java: [17, 25]
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
@@ -19,4 +19,9 @@ jobs:
         distribution: 'zulu'
     - uses: sbt/setup-sbt@v1
     - name: Run tests
-      run: sbt scalafmtSbtCheck "+ scalafmtCheckAll" +test
+      run: sbt
+           -v
+           --server
+           scalafmtSbtCheck
+           "+ scalafmtCheckAll"
+           "+ test"
