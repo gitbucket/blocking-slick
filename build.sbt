@@ -12,7 +12,7 @@ libraryDependencies ++= Seq(
   "com.mysql" % "mysql-connector-j" % "26.10.0" % "test",
   "org.scalatest" %% "scalatest-funsuite" % "3.2.20" % "test",
   "com.h2database" % "h2" % "2.5.252" % "test",
-  "ch.qos.logback" % "logback-classic" % "1.6.7" % "test"
+  "ch.qos.logback" % "logback-classic" % "1.6.8" % "test"
 )
 
 publishMavenStyle := true
